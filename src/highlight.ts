@@ -3,6 +3,7 @@
 import * as vscode from 'vscode';
 import { occurrencesInTree } from './core/resolver';
 import type { DocTrees } from './docTree';
+import { t } from './i18n';
 import type { SymbolService } from './providers';
 
 interface Entry {
@@ -36,9 +37,15 @@ export class StickyHighlight implements vscode.Disposable {
 
   async toggle(editor: vscode.TextEditor): Promise<void> {
     const doc = editor.document;
+    const wordRange = doc.getWordRangeAtPosition(editor.selection.active, /[A-Za-z_]\w*/);
+    if (!wordRange) {
+      void vscode.window.showInformationMessage(t('noSymbolHere'));
+      return;
+    }
+    // Scope-aware when the resolver knows the symbol; plain word highlight otherwise (e.g. no database yet).
     const res = await this.service.resolveAt(doc, editor.selection.active);
-    if (!res) return;
-    const key = res.kind === 'local' ? `${res.name}@${res.decl.start.line}:${res.decl.start.col}` : res.name;
+    const name = res?.name ?? doc.getText(wordRange);
+    const key = res?.kind === 'local' ? `${res.name}@${res.decl.start.line}:${res.decl.start.col}` : name;
     const list = this.byDoc.get(doc.uri.toString()) ?? [];
     const existing = list.findIndex((e) => e.key === key);
     if (existing >= 0) {
@@ -52,10 +59,11 @@ export class StickyHighlight implements vscode.Disposable {
         overviewRulerColor: colour,
         overviewRulerLane: vscode.OverviewRulerLane.Center,
       });
-      list.push({ key, name: res.name, local: res.kind === 'local' ? { line: res.decl.start.line, col: res.decl.start.col } : undefined, decoration });
+      list.push({ key, name, local: res?.kind === 'local' ? { line: res.decl.start.line, col: res.decl.start.col } : undefined, decoration });
     }
     this.byDoc.set(doc.uri.toString(), list);
-    await this.refresh(doc);
+    const count = await this.refresh(doc);
+    vscode.window.setStatusBarMessage(existing >= 0 ? t('highlightOff', name) : t('highlightOn', name, count), 3000);
   }
 
   clear(doc: vscode.TextDocument): void {
@@ -65,13 +73,14 @@ export class StickyHighlight implements vscode.Disposable {
     this.byDoc.delete(doc.uri.toString());
   }
 
-  private async refresh(doc: vscode.TextDocument): Promise<void> {
+  private async refresh(doc: vscode.TextDocument): Promise<number> {
     const list = this.byDoc.get(doc.uri.toString());
-    if (!list?.length) return;
-    const editors = vscode.window.visibleTextEditors.filter((e) => e.document === doc);
-    if (!editors.length) return;
+    if (!list?.length) return 0;
+    const editors = vscode.window.visibleTextEditors.filter((e) => e.document.uri.toString() === doc.uri.toString());
+    if (!editors.length) return 0;
     const tree = await this.trees.get(doc);
-    if (!tree) return;
+    if (!tree) return 0;
+    let last = 0;
     for (const e of list) {
       let ranges: vscode.Range[];
       if (e.local) {
@@ -82,7 +91,9 @@ export class StickyHighlight implements vscode.Disposable {
         ranges = occurrencesInTree(tree, e.name).map((r) => new vscode.Range(r.start.line, r.start.col, r.end.line, r.end.col));
       }
       for (const ed of editors) ed.setDecorations(e.decoration, ranges);
+      last = ranges.length;
     }
+    return last;
   }
 
   dispose(): void {
