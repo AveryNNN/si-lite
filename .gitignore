@@ -1,0 +1,8 @@
+node_modules/
+dist/
+media/relation.js
+*.vsix
+scratch/
+.vscode-test/
+bench/
+media/relation.js.map

@@ -1,0 +1,458 @@
+{
+  "name": "si-lite",
+  "displayName": "Source Insight Lite",
+  "description": "Source Insight style project symbol database, context window and relation graphs for C/C++ in VS Code.",
+  "version": "0.1.0",
+  "publisher": "AveryNNN",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.63.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Visualization"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "siLite.buildProject",
+        "title": "%cmd.buildProject%",
+        "icon": "$(database)"
+      },
+      {
+        "command": "siLite.rebuildProject",
+        "title": "%cmd.rebuildProject%",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "siLite.syncFile",
+        "title": "%cmd.syncFile%"
+      },
+      {
+        "command": "siLite.searchSymbol",
+        "title": "%cmd.searchSymbol%",
+        "icon": "$(search)"
+      },
+      {
+        "command": "siLite.showRelations",
+        "title": "%cmd.showRelations%",
+        "icon": "$(type-hierarchy)"
+      },
+      {
+        "command": "siLite.showIncludes",
+        "title": "%cmd.showIncludes%"
+      },
+      {
+        "command": "siLite.refreshSymbols",
+        "title": "%cmd.refreshSymbols%",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "siLite.openSymbol",
+        "title": "%cmd.openSymbol%"
+      },
+      {
+        "command": "siLite.findReferences",
+        "title": "%cmd.findReferences%"
+      },
+      {
+        "command": "siLite.findReferencesInFile",
+        "title": "%cmd.findReferencesInFile%"
+      },
+      {
+        "command": "siLite.searchProject",
+        "title": "%cmd.searchProject%",
+        "icon": "$(search-fuzzy)"
+      },
+      {
+        "command": "siLite.addToProject",
+        "title": "%cmd.addToProject%",
+        "icon": "$(add)"
+      },
+      {
+        "command": "siLite.removeFromProject",
+        "title": "%cmd.removeFromProject%",
+        "icon": "$(remove)"
+      },
+      {
+        "command": "siLite.previewLocation",
+        "title": "%cmd.previewLocation%"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "siLite",
+          "title": "%view.container%",
+          "icon": "media/icon.svg"
+        }
+      ],
+      "panel": [
+        {
+          "id": "siLitePanel",
+          "title": "%view.panel%",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "siLite": [
+        {
+          "id": "siLite.symbols",
+          "name": "%view.symbols%",
+          "icon": "media/icon.svg"
+        },
+        {
+          "id": "siLite.context",
+          "name": "%view.context%",
+          "type": "webview",
+          "icon": "media/icon.svg"
+        }
+      ],
+      "siLitePanel": [
+        {
+          "id": "siLite.relations",
+          "name": "%view.relations%",
+          "type": "webview"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "siLite.symbols",
+        "contents": "%welcome.symbols%"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "siLite.searchSymbol",
+          "when": "view == siLite.symbols",
+          "group": "navigation@1"
+        },
+        {
+          "command": "siLite.buildProject",
+          "when": "view == siLite.symbols",
+          "group": "navigation@2"
+        },
+        {
+          "command": "siLite.refreshSymbols",
+          "when": "view == siLite.symbols",
+          "group": "navigation@3"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "siLite.showRelations",
+          "when": "editorLangId == c || editorLangId == cpp",
+          "group": "navigation@9"
+        },
+        {
+          "command": "siLite.findReferences",
+          "when": "editorLangId == c || editorLangId == cpp",
+          "group": "navigation@10"
+        },
+        {
+          "command": "siLite.findReferencesInFile",
+          "when": "editorLangId == c || editorLangId == cpp",
+          "group": "navigation@11"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "siLite.addToProject",
+          "group": "7_siLite@1"
+        },
+        {
+          "command": "siLite.removeFromProject",
+          "group": "7_siLite@2"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "siLite.previewLocation",
+          "when": "false"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "siLite.searchSymbol",
+        "key": "ctrl+alt+s",
+        "mac": "cmd+alt+s"
+      },
+      {
+        "command": "siLite.showRelations",
+        "key": "ctrl+alt+r",
+        "mac": "cmd+alt+r",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "siLite.findReferences",
+        "key": "ctrl+alt+/",
+        "mac": "cmd+alt+/",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "siLite.findReferencesInFile",
+        "key": "ctrl+alt+.",
+        "mac": "cmd+alt+.",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "siLite.searchProject",
+        "key": "ctrl+alt+shift+s",
+        "mac": "cmd+alt+shift+s"
+      },
+      {
+        "command": "editor.action.revealDefinition",
+        "key": "ctrl+=",
+        "when": "config.siLite.sourceInsightKeys && editorTextFocus && (editorLangId == c || editorLangId == cpp)"
+      },
+      {
+        "command": "siLite.findReferences",
+        "key": "ctrl+/",
+        "when": "config.siLite.sourceInsightKeys && editorTextFocus && (editorLangId == c || editorLangId == cpp)"
+      },
+      {
+        "command": "workbench.action.navigateBack",
+        "key": "alt+,",
+        "when": "config.siLite.sourceInsightKeys"
+      },
+      {
+        "command": "workbench.action.navigateForward",
+        "key": "alt+.",
+        "when": "config.siLite.sourceInsightKeys"
+      },
+      {
+        "command": "siLite.searchSymbol",
+        "key": "f7",
+        "when": "config.siLite.sourceInsightKeys"
+      },
+      {
+        "command": "workbench.action.gotoSymbol",
+        "key": "f8",
+        "when": "config.siLite.sourceInsightKeys"
+      }
+    ],
+    "configuration": {
+      "title": "%config.title%",
+      "properties": {
+        "siLite.include": {
+          "type": "string",
+          "default": "**/*.{c,h,cpp,cc,cxx,hpp,hh,hxx,inl}",
+          "description": "%config.include%"
+        },
+        "siLite.exclude": {
+          "type": "string",
+          "default": "{**/node_modules/**,**/.git/**,**/build/**,**/out/**,**/dist/**,**/.cache/**}",
+          "description": "%config.exclude%"
+        },
+        "siLite.headerLanguage": {
+          "type": "string",
+          "enum": [
+            "c",
+            "cpp"
+          ],
+          "default": "cpp",
+          "description": "%config.headerLanguage%"
+        },
+        "siLite.indexReferences": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.indexReferences%"
+        },
+        "siLite.autoBuildOnOpen": {
+          "type": "boolean",
+          "default": false,
+          "description": "%config.autoBuildOnOpen%"
+        },
+        "siLite.relationDepth": {
+          "type": "number",
+          "default": 1,
+          "minimum": 1,
+          "maximum": 4,
+          "description": "%config.relationDepth%"
+        },
+        "siLite.relationFollowCursor": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.relationFollowCursor%"
+        },
+        "siLite.maxGraphNodes": {
+          "type": "number",
+          "default": 150,
+          "description": "%config.maxGraphNodes%"
+        },
+        "siLite.ignoreMacros": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "av_cold",
+            "av_unused",
+            "av_always_inline",
+            "av_noinline",
+            "av_pure",
+            "av_const",
+            "av_warn_unused_result",
+            "attribute_align_arg",
+            "__init",
+            "__exit",
+            "__initdata",
+            "__user",
+            "__kernel",
+            "__iomem",
+            "__must_check",
+            "__maybe_unused",
+            "__always_inline",
+            "__cold",
+            "__hot",
+            "__weak",
+            "__packed",
+            "__used",
+            "__read_mostly",
+            "__percpu",
+            "__rcu",
+            "asmlinkage",
+            "notrace",
+            "__visible",
+            "__ref",
+            "WINAPI",
+            "APIENTRY",
+            "CALLBACK",
+            "STDCALL",
+            "DECLSPEC_NORETURN",
+            "FORCEINLINE"
+          ],
+          "description": "%config.ignoreMacros%"
+        },
+        "siLite.provideHover": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.provideHover%"
+        },
+        "siLite.language": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "zh-cn",
+            "en"
+          ],
+          "enumDescriptions": [
+            "%config.language.auto%",
+            "%config.language.zh%",
+            "%config.language.en%"
+          ],
+          "default": "auto",
+          "description": "%config.language%"
+        },
+        "siLite.semanticHighlighting": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.semanticHighlighting%"
+        },
+        "siLite.parallelism": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 8,
+          "description": "%config.parallelism%"
+        },
+        "siLite.sourceInsightKeys": {
+          "type": "boolean",
+          "default": false,
+          "description": "%config.sourceInsightKeys%"
+        },
+        "siLite.externalPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "%config.externalPaths%"
+        },
+        "siLite.excludePaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "%config.excludePaths%"
+        }
+      }
+    },
+    "semanticTokenScopes": [
+      {
+        "language": "c",
+        "scopes": {
+          "macro": [
+            "entity.name.function.preprocessor.c"
+          ],
+          "variable.static": [
+            "variable.other.global.c"
+          ]
+        }
+      },
+      {
+        "language": "cpp",
+        "scopes": {
+          "macro": [
+            "entity.name.function.preprocessor.cpp"
+          ],
+          "variable.static": [
+            "variable.other.global.cpp"
+          ]
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p webview/tsconfig.json --noEmit",
+    "test:core": "node esbuild.mjs --test && node dist/core-test.js",
+    "bench": "esbuild src/core/bench.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/bench.js --log-level=error && node --max-old-space-size=4096 dist/bench.js",
+    "test:vscode": "npm run build && node esbuild.mjs --test && node test/runTest.mjs",
+    "test": "npm run test:core && npm run test:vscode",
+    "package": "npm run build && vsce package --no-dependencies --allow-missing-repository"
+  },
+  "dependencies": {
+    "cytoscape": "^3.34.3",
+    "cytoscape-dagre": "^4.0.1",
+    "dagre": "^0.8.5",
+    "sql.js": "^1.14.2",
+    "tree-sitter-c": "^0.24.1",
+    "tree-sitter-cpp": "^0.23.4",
+    "web-tree-sitter": "^0.27.0"
+  },
+  "devDependencies": {
+    "@types/cytoscape": "^3.21.9",
+    "@types/cytoscape-dagre": "^2.3.4",
+    "@types/node": "^22.20.2",
+    "@types/sql.js": "^1.4.11",
+    "@types/vscode": "1.100",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^3.9.2",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AveryNNN/si-lite.git"
+  },
+  "keywords": [
+    "c",
+    "cpp",
+    "source insight",
+    "symbol database",
+    "call graph",
+    "tree-sitter",
+    "code navigation"
+  ]
+}
