@@ -20,8 +20,8 @@ Parsing is done with tree-sitter (C and C++ grammars, WASM), and the symbol data
 | Add / Remove Project Files | 资源管理器右键：`SI：加入工程`（工作区外的目录也可以）/ `SI：从工程移除` |
 | Project Symbol List | 侧边栏"工程符号"树 + `Ctrl+Alt+S` 模糊搜索 + `Ctrl+T` |
 | Symbol Window（文件内符号列表） | 大纲视图、面包屑、`Ctrl+Shift+O`，可按名字 / 位置 / 类型排序和过滤 |
-| Context Window | "上下文"视图：定义、结构体成员表（每个成员被多少文件引用，点击切换）、全工程引用按文件分组；变量会解码到它的结构体类型；局部变量只显示所在函数内的使用 |
-| Relation Window | "关系图"面板：调用 / 被调用 / 双向、基类 / 派生类、包含 / 被包含，深度 1-4，跟随光标 |
+| Context Window | "上下文"视图：带语法着色的定义、结构体成员表（每个成员被多少文件引用，点击切换）、全工程引用按文件分组并按离光标的远近排序；变量会解码到它的结构体类型；局部变量只显示所在函数内的使用；单击在下方预览，双击打开 |
+| Relation Window | "关系图"视图：调用 / 被调用 / 双向、基类 / 派生类、包含 / 被包含，深度 1-4，跟随光标。图形和大纲列表两种形式；扇入扇出过大时按目录折叠；节点右侧的 ⊕ 再展开一层（对应 SI 图框右边的展开）；单击选中并同步上下文视图，双击打开，右键设为中心 |
 | Lookup References | `Ctrl+Alt+/` 全工程引用、`Ctrl+Alt+.` 仅本文件，用 VS Code 原生引用面板展示；也可直接 `Shift+F12` |
 | 调用树 / 类继承树（大纲形式） | VS Code 自带的 Call Hierarchy 和 Type Hierarchy 视图 |
 | 自动引用高亮（区分作用域） | 光标处标识符的高亮按作用域区分：局部变量只高亮本函数内；另有 Source Insight 式的 F8 持久高亮（`SI：高亮 / 取消高亮光标处符号`），不随光标移动消失，可叠加多个颜色 |
@@ -41,7 +41,7 @@ Parsing is done with tree-sitter (C and C++ grammars, WASM), and the symbol data
 **使用步骤**
 
 1. 打开 C/C++ 工作区，运行命令 **SI：构建工程**。
-2. 光标放到符号上，"上下文"和"关系图"自动更新；`Ctrl+Alt+R` 以光标处符号为中心重绘关系图。
+2. 光标放到符号上，左侧"上下文"和"关系图"两个视图自动更新；`Ctrl+Alt+R` 以光标处符号为中心重绘关系图。
 3. 关系图里单击节点打开位置，双击换中心，点击边跳到调用点。
 4. 保存文件或外部改动会自动只重索引那个文件；编辑时语法树增量更新，大文件也不卡。
 
@@ -61,8 +61,8 @@ Parsing is done with tree-sitter (C and C++ grammars, WASM), and the symbol data
 | Add / Remove Project Files | Right-click in the Explorer: `SI: Add to Project` (also folders outside the workspace) / `SI: Remove from Project` |
 | Project Symbol List | **Project Symbols** tree, `SI: Search Project Symbol` (`Ctrl+Alt+S`), `Ctrl+T` workspace symbols |
 | Symbol Window | Outline, breadcrumbs and `Ctrl+Shift+O` from a tree-sitter DocumentSymbolProvider |
-| Context Window | **Context** view: definition, struct member table with usage counts, project-wide uses grouped by file; variables are decoded to their struct type; locals show only their scope |
-| Relation Window | **Relations** panel: calls / called by / both, base / derived classes, include graph, depth 1-4, follows the cursor |
+| Context Window | **Context** view: syntax-coloured definition, struct member table with usage counts, project-wide uses grouped by file and ordered by closeness to the cursor; variables are decoded to their struct type; locals show only their scope; single click previews in the pane below, double click opens |
+| Relation Window | **Relations** view: calls / called by / both, base / derived classes, include graph, depth 1-4, follows the cursor. Graph or outline list; big fan-in/out is folded by folder; the ⊕ handle on a node expands one more level (Source Insight's box handle); click selects and the Context view follows, double-click opens, right-click re-centres |
 | Lookup References | `Ctrl+Alt+/` project wide, `Ctrl+Alt+.` this file, shown in VS Code's own references peek; `Shift+F12` works too |
 | Call / class trees in outline form | VS Code's Call Hierarchy and Type Hierarchy views |
 | Automatic reference highlighting | Scope-aware DocumentHighlightProvider; F8-style sticky highlight (`SI: Toggle Highlight`) that survives cursor moves |
@@ -166,6 +166,10 @@ npm run package        # produce .vsix
 ```
 
 Press F5 in VS Code to launch the Extension Development Host.
+
+## Credits
+
+Icons in the webviews come from [VS Code Codicons](https://github.com/microsoft/vscode-codicons) (CC-BY-4.0).
 
 ## Limitations
 

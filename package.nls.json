@@ -8,7 +8,6 @@
   "cmd.refreshSymbols": "SI: Refresh Symbol Tree",
   "cmd.openSymbol": "SI: Open Symbol",
   "view.container": "Source Insight",
-  "view.panel": "SI Relations",
   "view.symbols": "Project Symbols",
   "view.context": "Context",
   "view.relations": "Relations",

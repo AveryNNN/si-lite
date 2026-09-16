@@ -15,6 +15,8 @@ import { ContextViewProvider } from './views/contextView';
 import { RelationViewProvider } from './views/relationView';
 import { SymbolTreeProvider } from './views/symbolTree';
 
+let lastTreeClick: { key: string; at: number } | undefined;
+
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   setLocaleResolver(() => {
     const pref = vscode.workspace.getConfiguration('siLite').get<string>('language', 'auto');
@@ -90,6 +92,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   context.subscriptions.push(
     relationView.onPreview((loc) => void contextView.showPreview(loc.path, loc.line, loc.col)),
+    relationView.onSelect((id) => void contextView.showSymbol(id)),
     indexer.onDidChange(() => {
       semantic.invalidate();
       symbolTree.refresh();
@@ -118,7 +121,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       if (doc) return indexer.indexFile(doc.uri, true);
     }),
     vscode.commands.registerCommand('siLite.refreshSymbols', () => symbolTree.refresh()),
-    vscode.commands.registerCommand('siLite.openSymbol', (p: string, line: number, col: number) => openLocation(p, line, col)),
+    vscode.commands.registerCommand('siLite.openSymbol', (p: string, line: number, col: number, id?: number) => {
+      // Tree items fire on every click: first click shows the symbol in the Context view, a second
+      // click on the same item within 350ms opens the file (Source Insight's single/double click).
+      const key = `${p}:${line}`;
+      const now = Date.now();
+      if (lastTreeClick && lastTreeClick.key === key && now - lastTreeClick.at < 350) {
+        lastTreeClick = undefined;
+        return openLocation(p, line, col);
+      }
+      lastTreeClick = { key, at: now };
+      if (id != null) return contextView.showSymbol(id);
+      return contextView.showPreview(p, line, col);
+    }),
     vscode.commands.registerCommand('siLite.showRelations', () => {
       const editor = vscode.window.activeTextEditor;
       if (!editor) return;

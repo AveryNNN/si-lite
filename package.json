@@ -98,13 +98,6 @@
           "title": "%view.container%",
           "icon": "media/icon.svg"
         }
-      ],
-      "panel": [
-        {
-          "id": "siLitePanel",
-          "title": "%view.panel%",
-          "icon": "media/icon.svg"
-        }
       ]
     },
     "views": {
@@ -119,13 +112,12 @@
           "name": "%view.context%",
           "type": "webview",
           "icon": "media/icon.svg"
-        }
-      ],
-      "siLitePanel": [
+        },
         {
           "id": "siLite.relations",
           "name": "%view.relations%",
-          "type": "webview"
+          "type": "webview",
+          "icon": "media/icon.svg"
         }
       ]
     },
@@ -465,6 +457,7 @@
     "package": "npm run build && vsce package --no-dependencies --allow-missing-repository"
   },
   "dependencies": {
+    "@vscode/codicons": "^0.0.46-24",
     "cytoscape": "^3.34.3",
     "cytoscape-dagre": "^4.0.1",
     "dagre": "^0.8.5",
@@ -496,5 +489,6 @@
     "call graph",
     "tree-sitter",
     "code navigation"
-  ]
+  ],
+  "icon": "media/icon.png"
 }

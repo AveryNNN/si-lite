@@ -39,7 +39,7 @@ export class SymbolTreeProvider implements vscode.TreeDataProvider<Node> {
     item.description = `${s.qualname !== s.name ? s.qualname + '  ' : ''}${relPath(s.path)}:${s.line + 1}`;
     item.tooltip = new vscode.MarkdownString().appendCodeblock(s.signature, 'cpp');
     item.iconPath = new vscode.ThemeIcon(KIND_ICON[s.kind]);
-    item.command = { command: 'siLite.openSymbol', title: t('open'), arguments: [s.path, s.line, s.col] };
+    item.command = { command: 'siLite.openSymbol', title: t('open'), arguments: [s.path, s.line, s.col, s.id] };
     item.contextValue = 'symbol';
     return item;
   }

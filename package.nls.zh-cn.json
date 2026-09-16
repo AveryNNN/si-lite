@@ -8,7 +8,6 @@
   "cmd.refreshSymbols": "SI：刷新符号树",
   "cmd.openSymbol": "SI：打开符号",
   "view.container": "Source Insight",
-  "view.panel": "SI 关系图",
   "view.symbols": "工程符号",
   "view.context": "上下文",
   "view.relations": "关系图",

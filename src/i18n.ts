@@ -46,7 +46,7 @@ const en = {
   sameFunction: 'in {0} (current function)',
   restOfFile: 'elsewhere in this file',
   clickHint: 'click: preview · double-click: open',
-  graphHint: 'click: preview · double-click: open · right-click: centre',
+  graphHint: 'click: select · ⊕: expand · dbl-click: open · right-click: centre',
   openFile: 'Open',
   closePreview: 'Close preview',
   analysing: 'Analysing references of {0} …',
@@ -82,7 +82,13 @@ const en = {
   followCursor: 'Follow cursor',
   fit: 'Fit',
   fitTitle: 'Fit graph',
-  relationsEmpty: 'Put the cursor on a function, or run "SI: Show Relations".',
+  viewGraph: 'Graph',
+  viewList: 'Outline list',
+  expandMore: 'expand one more level',
+  collapse: 'collapse',
+  listCallers: 'Called by / used by',
+  listCallees: 'Calls',
+  relationsEmpty: 'Put the cursor on a function, or run "SI: Show Relations". Click a node to show it in the Context view; the ⊕ on a node expands one more level; double-click opens the file; right-click re-centres.',
   noRelations: 'No relations found for {0}',
   nothingToShow: 'Nothing to show.',
   truncated: 'Graph truncated (siLite.maxGraphNodes)',
@@ -162,7 +168,7 @@ const zhCn: Record<MessageKey, string> = {
   sameFunction: '本函数 {0} 内',
   restOfFile: '本文件其他位置',
   clickHint: '单击预览 · 双击打开',
-  graphHint: '单击预览 · 双击打开 · 右键设为中心',
+  graphHint: '单击选中 · ⊕ 展开 · 双击打开 · 右键设为中心',
   openFile: '打开',
   closePreview: '关闭预览',
   analysing: '正在分析 {0} 的引用…',
@@ -197,7 +203,13 @@ const zhCn: Record<MessageKey, string> = {
   followCursor: '跟随光标',
   fit: '适应',
   fitTitle: '缩放到整图',
-  relationsEmpty: '把光标放到函数上，或运行“SI：显示光标处符号的关系图”。',
+  viewGraph: '图形',
+  viewList: '大纲列表',
+  expandMore: '再展开一层',
+  collapse: '收起',
+  listCallers: '被调用 / 被引用',
+  listCallees: '调用',
+  relationsEmpty: '把光标放到函数上，或运行“SI：显示光标处符号的关系图”。单击节点在上下文视图里显示它，节点右侧的 ⊕ 再展开一层，双击打开文件，右键设为中心。',
   noRelations: '未找到 {0} 的关系',
   nothingToShow: '没有可显示的内容。',
   truncated: '图已截断（siLite.maxGraphNodes）',
@@ -259,6 +271,6 @@ export function kindWord(kind: SymbolKind): string {
 
 /** Strings the Relations webview needs; sent once per page load. */
 export function relationStrings(): Record<string, string> {
-  const keys: MessageKey[] = ['noRelations', 'nothingToShow', 'truncated', 'nodesEdges'];
+  const keys: MessageKey[] = ['noRelations', 'nothingToShow', 'truncated', 'nodesEdges', 'expandMore', 'collapse', 'listCallers', 'listCallees'];
   return Object.fromEntries(keys.map((k) => [k, tables[currentLocale()][k]]));
 }

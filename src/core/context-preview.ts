@@ -49,11 +49,11 @@ async function main() {
   // Also exercise the preview pane with the first reference row in the page.
   const m = /class="row[^"]*" data-path="([^"]+)" data-line="(\d+)" data-col="(\d+)"/.exec(body);
   const previewBody = m ? await renderer.previewHtml(m[1].replace(/&#39;/g, "'"), Number(m[2]), Number(m[3]), name) : '';
-  const page = contextPageHtml('x', "'self'")
+  const page = contextPageHtml('x', "'self'", 'codicons/codicon.css')
     .replace('<script nonce="x">', '<script nonce="x">window.acquireVsCodeApi = () => ({ postMessage() {}, getState() { return null; }, setState() {} });</script><script nonce="x">')
     .replace('<div id="root"><div class="empty">', '<div id="root" hidden><div class="empty">')
     .replace('</script></body></html>', `window.postMessage({ type: 'set', html: ${JSON.stringify(body)}, key: 'x' }, '*'); document.getElementById('root').hidden = false; setTimeout(() => window.postMessage({ type: 'preview', html: ${JSON.stringify(previewBody)} }, '*'), 50);</script></body></html>`);
-  const themed = page.replace('<style>', '<style>body{--vscode-foreground:#ccc;--vscode-sideBar-background:#252526;--vscode-badge-background:#4d4d4d;--vscode-badge-foreground:#fff;--vscode-editor-font-family:Consolas,monospace;--vscode-editor-font-size:12px;--vscode-font-size:13px;--vscode-font-family:"Segoe UI",sans-serif;--vscode-list-hoverBackground:#2a2d2e;background:#252526;width:420px}');
+  const themed = page.replace('<style>', '<style>body{--vscode-foreground:#ccc;--vscode-sideBar-background:#252526;--vscode-badge-background:#4d4d4d;--vscode-badge-foreground:#fff;--vscode-editor-font-family:Consolas,monospace;--vscode-editor-font-size:12px;--vscode-font-size:13px;--vscode-font-family:"Segoe UI",sans-serif;--vscode-list-hoverBackground:#2a2d2e;--vscode-symbolIcon-functionForeground:#b180d7;background:#252526;width:420px}').replace('<body>', '<body class="vscode-dark">');
   fs.writeFileSync(out, themed);
 }
 main().catch((e) => {

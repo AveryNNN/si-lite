@@ -3,6 +3,7 @@ import { baseTypeName, typeFromDeclaration, type Resolution } from '../core/reso
 import type { Store, SymbolRow } from '../core/store';
 import { kindWord, t } from '../i18n';
 import { escapeHtml } from '../util-core';
+import { SYNTAX_CSS, commentStateAt, renderLine } from './syntax';
 
 const MAX_BODY_LINES = 12;
 const MAX_COMMENT_LINES = 6;
@@ -18,11 +19,21 @@ interface Snippet {
   startLine: number;
   lines: string[];
   truncated: boolean;
+  inComment: boolean;
 }
 
 export type RefPos = { line: number; col: number };
 /** Drops occurrences that are not really this symbol (shadowing locals, other types' members). */
 export type OccurrenceFilter = (path: string, refs: RefPos[]) => Promise<RefPos[]>;
+
+const KIND_ICONS: Record<string, string> = {
+  function: 'symbol-method', method: 'symbol-method', prototype: 'symbol-interface', variable: 'symbol-variable', field: 'symbol-field',
+  struct: 'symbol-structure', class: 'symbol-class', union: 'symbol-structure', enum: 'symbol-enum', enumerator: 'symbol-enum-member',
+  typedef: 'symbol-interface', macro: 'symbol-constant', namespace: 'symbol-namespace',
+};
+export function kindIcon(kind: string): string {
+  return KIND_ICONS[kind] ?? 'symbol-misc';
+}
 
 export class ContextRenderer {
   /** Set by the host for the symbol currently shown; used when file groups are expanded lazily. */
@@ -81,14 +92,12 @@ export class ContextRenderer {
       const trimmed = text.trimStart();
       const col = Math.max(0, r.start.col - (text.length - trimmed.length));
       const isDecl = r.start.line === res.decl.start.line && r.start.col === res.decl.start.col;
-      const code = trimmed.slice(col, col + res.name.length) === res.name
-        ? `${escapeHtml(trimmed.slice(0, col))}<mark>${escapeHtml(res.name)}</mark>${escapeHtml(trimmed.slice(col + res.name.length))}`
-        : escapeHtml(trimmed);
+      const code = renderLine(trimmed, false, trimmed.slice(col, col + res.name.length) === res.name ? { col, len: res.name.length } : undefined).html;
       return `<div class="row${isDecl ? ' decl' : ''}" data-path="${escapeHtml(filePath)}" data-line="${r.start.line}" data-col="${r.start.col}"><span class="ln">${r.start.line + 1}</span><code>${code}</code></div>`;
     });
     const scopeLabel = res.scopeName ? t('localUses', res.scopeName) : t('usesInProject');
-    return `<section><div class="title">${t('definition')}</div>${header}</section>
-      <section><div class="title">${escapeHtml(scopeLabel)} <span class="dim">${res.refs.length}</span></div><div class="rows local">${rows.join('')}</div></section>`;
+    return `<section><div class="title"><i class="codicon codicon-symbol-variable"></i>${t('definition')}</div>${header}</section>
+      <section><div class="title"><i class="codicon codicon-references"></i>${escapeHtml(scopeLabel)} <span class="dim">${res.refs.length}</span></div><div class="rows local">${rows.join('')}</div></section>`;
   }
 
   async render(word: string, syms: SymbolRow[]): Promise<string> {
@@ -108,14 +117,17 @@ export class ContextRenderer {
   private async definitionSection(s: SymbolRow, others: SymbolRow[], note?: string, title = t('definition')): Promise<string> {
     const snip = await this.snippet(s);
     const header = `<div class="hdr" data-path="${escapeHtml(s.path)}" data-line="${s.line}" data-col="${s.col}" title="${escapeHtml(s.path)}">
-        <span class="kind">${kindWord(s.kind)}</span> <span class="name">${escapeHtml(s.qualname)}</span>${note ? ` <span class="dim">${escapeHtml(note)}</span>` : ''}
+        <span class="kind"><i class="codicon codicon-${kindIcon(s.kind)}"></i>${kindWord(s.kind)}</span> <span class="name">${escapeHtml(s.qualname)}</span>${note ? ` <span class="dim">${escapeHtml(note)}</span>` : ''}
         <span class="loc">${escapeHtml(this.relPath(s.path))}:${s.line + 1}</span></div>`;
     let code = '';
     if (snip) {
+      let inComment = snip.inComment;
       const rows = snip.lines.map((l, i) => {
         const n = snip.startLine + i;
         const cls = n === s.line ? ' class="def"' : '';
-        return `<tr${cls} data-line="${n}"><td class="ln">${n + 1}</td><td class="src">${escapeHtml(l) || '&nbsp;'}</td></tr>`;
+        const r = renderLine(l, inComment, n === s.line && l.slice(s.col, s.col + s.name.length) === s.name ? { col: s.col, len: s.name.length } : undefined);
+        inComment = r.inComment;
+        return `<tr${cls} data-line="${n}"><td class="ln">${n + 1}</td><td class="src">${r.html}</td></tr>`;
       });
       const moreRow = snip.truncated ? `<tr class="dim" data-line="${snip.startLine + snip.lines.length}"><td class="ln">…</td><td class="src">${t('moreLines', s.endLine - snip.startLine - snip.lines.length + 1)}</td></tr>` : '';
       code = `<table class="code" data-path="${escapeHtml(s.path)}">${rows.join('')}${moreRow}</table>`;
@@ -123,11 +135,11 @@ export class ContextRenderer {
     let alt = '';
     if (others.length) {
       const items = others.slice(0, 8).map(
-        (o) => `<li data-path="${escapeHtml(o.path)}" data-line="${o.line}" data-col="${o.col}"><span class="kind">${kindWord(o.kind)}</span> ${escapeHtml(o.qualname)} <span class="dim">${escapeHtml(this.relPath(o.path))}:${o.line + 1}</span></li>`,
+        (o) => `<li data-path="${escapeHtml(o.path)}" data-line="${o.line}" data-col="${o.col}"><span class="kind"><i class="codicon codicon-${kindIcon(o.kind)}"></i>${kindWord(o.kind)}</span> ${escapeHtml(o.qualname)} <span class="dim">${escapeHtml(this.relPath(o.path))}:${o.line + 1}</span></li>`,
       );
       alt = `<details class="alt"><summary>${t('otherDefinitions', others.length)}</summary><ul class="list">${items.join('')}</ul></details>`;
     }
-    return `<section class="def-section"><details class="block" data-block="def" open><summary class="title">${title}</summary>${header}${code}${alt}</details></section>`;
+    return `<section class="def-section"><details class="block" data-block="def" open><summary class="title"><i class="codicon codicon-symbol-misc"></i>${title}</summary>${header}${code}${alt}</details></section>`;
   }
 
   /** Occurrences already confirmed by the context filter, keyed by file id; consulted by fileRows(). */
@@ -194,18 +206,18 @@ export class ContextRenderer {
     const calls = files.reduce((a, f) => a + f.calls, 0);
     const hiddenTotal = hiddenFiles.reduce((a, f) => a + f.total, 0);
     const droppedNote = hiddenTotal ? ` · ${t('droppedRows', hiddenTotal)}` : '';
-    const title = `<summary class="title">${t('usesInProject')} <span class="dim">${t('usesSummary', files.length, total, calls)}${note ? ' · ' + escapeHtml(note) : ''}${droppedNote}</span></summary>`;
+    const title = `<summary class="title"><i class="codicon codicon-references"></i>${t('usesInProject')} <span class="dim">${t('usesSummary', files.length, total, calls)}${note ? ' · ' + escapeHtml(note) : ''}${droppedNote}</span></summary>`;
     if (!files.length && !unfiltered.length && !hiddenFiles.length) return `<section><details class="block" data-block="uses" open>${title}<div class="empty">${t('noUses')}</div></details></section>`;
     const groups = await this.fileGroups(name, files.slice(0, FILES_LISTED), FILES_EXPANDED, 'kept');
     const more = files.length > FILES_LISTED ? `<div class="dim more">${t('moreFiles', files.length - FILES_LISTED)}</div>` : '';
     let rest = '';
     if (unfiltered.length) {
       const restGroups = await this.fileGroups(name, unfiltered.slice(0, FILES_LISTED), 0, 'plain');
-      rest += `<details class="block" data-block="unfiltered"><summary class="title">${t('unfilteredFiles', unfiltered.length)}</summary>${restGroups}${unfiltered.length > FILES_LISTED ? `<div class="dim more">${t('moreFiles', unfiltered.length - FILES_LISTED)}</div>` : ''}</details>`;
+      rest += `<details class="block" data-block="unfiltered"><summary class="title"><i class="codicon codicon-filter"></i>${t('unfilteredFiles', unfiltered.length)}</summary>${restGroups}${unfiltered.length > FILES_LISTED ? `<div class="dim more">${t('moreFiles', unfiltered.length - FILES_LISTED)}</div>` : ''}</details>`;
     }
     if (hiddenFiles.length) {
       const hiddenGroups = await this.fileGroups(name, hiddenFiles.slice(0, FILES_LISTED), 0, 'hidden');
-      rest += `<details class="block" data-block="hidden"><summary class="title">${t('hiddenBlock', hiddenTotal, hiddenFiles.length)}</summary>${hiddenGroups}</details>`;
+      rest += `<details class="block" data-block="hidden"><summary class="title"><i class="codicon codicon-eye-closed"></i>${t('hiddenBlock', hiddenTotal, hiddenFiles.length)}</summary>${hiddenGroups}</details>`;
     }
     return `<section><details class="block" data-block="uses" open>${title}${groups}${more}</details>${rest}</section>`;
   }
@@ -221,7 +233,7 @@ export class ContextRenderer {
       const where = d === 0 ? `<span class="where">${t('whereThisFile')}</span>` : d === 1 ? `<span class="where">${t('whereThisFolder')}</span>` : '';
       groups.push(
         `<details class="file"${open ? ' open' : ''} data-key="${variant}:${f.fileId}" data-name="${escapeHtml(name)}" data-file="${f.fileId}" data-path="${escapeHtml(f.path)}" data-variant="${variant}"${open ? ' data-loaded="1"' : ''}>
-          <summary>${where}<span class="fname" title="${escapeHtml(f.path)}">${escapeHtml(this.relPath(f.path))}</span>
+          <summary><i class="codicon codicon-chevron-right tw"></i>${where}<i class="codicon codicon-file-code fi"></i><span class="fname" title="${escapeHtml(f.path)}">${escapeHtml(this.relPath(f.path))}</span>
             <span class="badge">${badge}</span></summary>
           <div class="rows">${rows}</div></details>`,
       );
@@ -236,12 +248,12 @@ export class ContextRenderer {
     const from = Math.max(0, line - PREVIEW_CONTEXT);
     const to = Math.min(lines.length - 1, line + PREVIEW_CONTEXT);
     const rows: string[] = [];
+    let inComment = commentStateAt(lines, from);
     for (let n = from; n <= to; n++) {
-      let code = escapeHtml(lines[n]);
-      if (n === line && name && lines[n].slice(col, col + name.length) === name) {
-        code = `${escapeHtml(lines[n].slice(0, col))}<mark>${escapeHtml(name)}</mark>${escapeHtml(lines[n].slice(col + name.length))}`;
-      }
-      rows.push(`<tr${n === line ? ' class="def"' : ''} data-line="${n}"><td class="ln">${n + 1}</td><td class="src">${code || '&nbsp;'}</td></tr>`);
+      const mark = n === line && name && lines[n].slice(col, col + name.length) === name ? { col, len: name.length } : undefined;
+      const r = renderLine(lines[n], inComment, mark);
+      inComment = r.inComment;
+      rows.push(`<tr${n === line ? ' class="def"' : ''} data-line="${n}"><td class="ln">${n + 1}</td><td class="src">${r.html}</td></tr>`);
     }
     return `<div class="phdr"><span class="fname" title="${escapeHtml(path)}">${escapeHtml(this.relPath(path))}:${line + 1}</span>
       <button class="popen" data-path="${escapeHtml(path)}" data-line="${line}" data-col="${col}">${t('openFile')}</button>
@@ -288,14 +300,12 @@ export class ContextRenderer {
       const trimmed = text.trimStart();
       const lead = text.length - trimmed.length;
       const col = Math.max(0, r.col - lead);
-      let codeHtml: string;
-      if (trimmed.slice(col, col + name.length) === name) {
-        codeHtml = `${escapeHtml(trimmed.slice(0, col))}<mark>${escapeHtml(name)}</mark>${escapeHtml(trimmed.slice(col + name.length))}`;
-      } else codeHtml = escapeHtml(trimmed);
+      const codeHtml = renderLine(trimmed, false, trimmed.slice(col, col + name.length) === name ? { col, len: name.length } : undefined).html;
       const fn = r.from ? `<span class="fn" title="${escapeHtml(t('inFunction', r.from))}">${escapeHtml(r.from)}</span>` : '';
+      const icon = r.kind === 'call' ? '<i class="codicon codicon-call-outgoing ri" title="call"></i>' : '<i class="codicon codicon-circle-small ri"></i>';
       out.push(
         `<div class="row${r.kind === 'call' ? ' call' : ''}${here ? ' here' : ''}" data-path="${escapeHtml(path)}" data-line="${r.line}" data-col="${r.col}">
-          <span class="ln">${r.line + 1}</span>${fn}<code>${codeHtml}</code></div>`,
+          <span class="ln">${r.line + 1}</span>${icon}${fn}<code>${codeHtml}</code></div>`,
       );
     }
     if (refs.length > ROWS_PER_FILE) out.push(`<div class="dim more">${t('moreRows')}</div>`);
@@ -319,12 +329,12 @@ export class ContextRenderer {
         .map((f) => this.relPath(f.path).split('/').pop())
         .join(', ');
       return `<tr data-id="${m.id}" title="${escapeHtml(m.signature)}">
-        <td class="mname"><span class="kind">${kindWord(m.kind)}</span> ${escapeHtml(m.name)}</td>
+        <td class="mname"><i class="codicon codicon-${kindIcon(m.kind)} mi"></i>${escapeHtml(m.name)}</td>
         <td class="num">${total}</td><td class="num">${files.length}</td>
         <td class="dim files">${escapeHtml(top)}${files.length > 3 ? ' …' : ''}</td></tr>`;
     });
     const more = members.length > MEMBER_LIMIT ? `<div class="dim more">${t('moreRows')}</div>` : '';
-    return `<section><details class="block" data-block="members" open><summary class="title">${t('members', members.length)} <span class="dim">${t('membersHint')}</span></summary>
+    return `<section><details class="block" data-block="members" open><summary class="title"><i class="codicon codicon-symbol-field"></i>${t('members', members.length)} <span class="dim">${t('membersHint')}</span></summary>
       <table class="members"><thead><tr><th></th><th class="num">${t('colRefs')}</th><th class="num">${t('colFiles')}</th><th>${t('colWhere')}</th></tr></thead>
       <tbody>${rows.join('')}</tbody></table>${more}</details></section>`;
   }
@@ -347,21 +357,37 @@ export class ContextRenderer {
       i--;
     }
     const end = Math.min(s.endLine, s.line + MAX_BODY_LINES, lines.length - 1);
-    return { startLine: start, lines: lines.slice(start, end + 1), truncated: end < s.endLine };
+    return { startLine: start, lines: lines.slice(start, end + 1), truncated: end < s.endLine, inComment: commentStateAt(lines, start) };
   }
 
 }
 
-export function contextPageHtml(n: string, cspSource: string): string {
+export function contextPageHtml(n: string, cspSource: string, codiconCss = ''): string {
   return `<!DOCTYPE html><html><head><meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' ${cspSource}; script-src 'nonce-${n}';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' ${cspSource}; font-src ${cspSource}; script-src 'nonce-${n}';">
+${codiconCss ? `<link rel="stylesheet" href="${codiconCss}">` : ''}
 <style>
+${SYNTAX_CSS}
+.codicon { font-size: 13px; vertical-align: -2px; }
+.title .codicon { margin-right: 5px; opacity: .8; }
+.kind .codicon { font-size: 11px; margin-right: 3px; vertical-align: -1px; }
+.mi { margin-right: 5px; opacity: .8; }
+.fi { margin-right: 4px; opacity: .7; }
+.ri { font-size: 11px; opacity: .55; width: 12px; }
+.row.call .ri { opacity: .95; color: var(--vscode-symbolIcon-functionForeground, #b180d7); }
+.tw { width: 14px; opacity: .6; transition: transform .12s; }
+details.file[open] > summary .tw { transform: rotate(90deg); }
 body { font-family: var(--vscode-font-family); font-size: var(--vscode-font-size); color: var(--vscode-foreground); padding: 0 6px 8px; }
 #bar { position: sticky; top: 0; background: var(--vscode-sideBar-background); padding: 4px 0; display: flex; gap: 8px; align-items: center; z-index: 1; }
 #bar label { display: flex; gap: 4px; align-items: center; font-size: 11px; opacity: .85; cursor: pointer; }
 .empty { opacity: .7; padding: 6px 2px; }
-section { margin: 6px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--vscode-panel-border, rgba(128,128,128,.3)); }
-.title { font-size: 11px; letter-spacing: .02em; opacity: .75; margin: 2px 0 4px; }
+section { margin: 4px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--vscode-panel-border, rgba(128,128,128,.25)); }
+.title { font-size: 11px; font-weight: 600; letter-spacing: .02em; opacity: .9; margin: 6px 0 4px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.title .dim { font-weight: normal; }
+details.block > summary.title::before { font-family: codicon; content: '\\eab4'; font-weight: normal; opacity: .6; font-size: 12px; }
+details.block:not([open]) > summary.title::before { content: '\\eab6'; }
+details.alt > summary::before { font-family: codicon; content: '\\eab6'; font-size: 11px; opacity: .6; margin-right: 4px; }
+details.alt[open] > summary::before { content: '\\eab4'; }
 .title .dim { letter-spacing: 0; }
 .dim { opacity: .6; }
 .hdr { cursor: pointer; padding: 3px 2px; display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
@@ -378,9 +404,8 @@ td.src { white-space: pre; overflow: hidden; }
 details.alt, details.file { margin: 3px 0; }
 summary { cursor: pointer; list-style: none; }
 summary::-webkit-details-marker { display: none; }
-details.file summary { display: flex; gap: 6px; align-items: center; padding: 2px 0; }
-details.file summary::before, details.alt summary::before { content: '▸'; font-size: 10px; opacity: .6; width: 10px; display: inline-block; }
-details[open] summary::before { content: '▾'; }
+details.file summary { display: flex; gap: 4px; align-items: center; padding: 2px 0; border-radius: 3px; }
+details.file summary:hover { background: var(--vscode-list-hoverBackground); }
 .fname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .badge { margin-left: auto; font-size: 11px; opacity: .8; white-space: nowrap; }
 .rows { margin: 1px 0 4px 12px; }
@@ -388,7 +413,7 @@ details[open] summary::before { content: '▾'; }
 .row .ln { min-width: 3em; }
 .row .fn { font-family: var(--vscode-font-family); font-size: 10px; opacity: .65; max-width: 38%; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; }
 .row code { overflow: hidden; text-overflow: ellipsis; }
-.row.call .ln { border-left: 2px solid var(--vscode-symbolIcon-functionForeground, #b180d7); }
+.row .ln { border-left: 2px solid transparent; }
 mark { background: var(--vscode-editor-findMatchHighlightBackground, rgba(255,200,0,.35)); color: inherit; }
 .list { list-style: none; margin: 2px 0 0; padding-left: 12px; }
 .list li { cursor: pointer; padding: 1px 2px; }
@@ -400,8 +425,6 @@ mark { background: var(--vscode-editor-findMatchHighlightBackground, rgba(255,20
 .members .files { overflow: hidden; text-overflow: ellipsis; max-width: 40%; }
 .more { padding: 2px 2px; font-size: 11px; }
 details.block > summary.title { cursor: pointer; }
-details.block > summary.title::before { content: '▾'; margin-right: 4px; opacity: .6; }
-details.block:not([open]) > summary.title::before { content: '▸'; }
 .row.decl .ln { border-left: 2px solid var(--vscode-focusBorder, #007fd4); }
 #bar button { background: none; border: none; color: inherit; opacity: .7; cursor: pointer; font-size: 11px; padding: 0 4px; }
 #bar button:hover { opacity: 1; }

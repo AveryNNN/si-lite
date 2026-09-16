@@ -16,6 +16,9 @@ const wasmFiles = [
   require.resolve('sql.js/dist/sql-wasm.wasm'),
 ];
 for (const f of wasmFiles) copyFileSync(f, path.join('dist/wasm', path.basename(f)));
+// Codicon font for the webviews (CC-BY-4.0, attributed in README).
+mkdirSync('media/codicons', { recursive: true });
+for (const f of ['codicon.ttf', 'codicon.css']) copyFileSync(require.resolve('@vscode/codicons/dist/' + f), path.join('media/codicons', f));
 
 const common = { bundle: true, sourcemap: true, logLevel: 'info', minify: false };
 

@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { buildCallGraph, buildClassGraph, buildIncludeGraph, isCallable, type CallMode, type ClassMode, type GraphData } from '../core/graph';
 import type { Store, SymbolRow } from '../core/store';
 import { relationStrings, t } from '../i18n';
+import { relationPageHtml } from './relationPage';
 import { config, debounce, fsPathOf, isCFamily, nonce, openLocation, relPath, wordAt } from '../util';
 
 export type RelationMode = 'callees' | 'callers' | 'both' | 'includes' | 'includedBy' | 'includesBoth' | 'bases' | 'derived' | 'classBoth';
@@ -12,21 +13,33 @@ interface Options {
   mode: RelationMode;
   depth: number;
   follow: boolean;
+  view: 'graph' | 'list';
 }
 
+/**
+ * Relation Window. Single click on a node selects it (the Context view follows), the ⊕ handle on a
+ * node's right edge expands one more level in that direction, double click opens the code,
+ * right click makes the node the new centre. Big fan-in/out is folded by folder.
+ */
 export class RelationViewProvider implements vscode.WebviewViewProvider {
   static readonly viewType = 'siLite.relations';
   private view?: vscode.WebviewView;
   private center?: Center;
   private readonly _onPreview = new vscode.EventEmitter<{ path: string; line: number; col: number }>();
-  /** Single click on a node or edge: the Context view shows the code without navigating. */
+  /** Preview request for a location (edges, file nodes): the Context view shows the code. */
   readonly onPreview = this._onPreview.event;
+  private readonly _onSelect = new vscode.EventEmitter<number>();
+  /** A symbol node was clicked: the Context view switches to that symbol. */
+  readonly onSelect = this._onSelect.event;
   private opts: Options;
   private lastWord?: string;
+  /** Per-centre expansion state so re-renders keep what the user opened. */
+  private expanded = new Map<number, 'callees' | 'callers'>();
+  private expandedGroups = new Set<string>();
 
   constructor(private readonly store: Store, private readonly extensionUri: vscode.Uri) {
     const c = config();
-    this.opts = { mode: 'both', depth: c.relationDepth, follow: c.relationFollowCursor };
+    this.opts = { mode: 'both', depth: c.relationDepth, follow: c.relationFollowCursor, view: 'graph' };
   }
 
   resolveWebviewView(view: vscode.WebviewView): void {
@@ -52,21 +65,39 @@ export class RelationViewProvider implements vscode.WebviewViewProvider {
       case 'preview':
         this._onPreview.fire({ path: m.path as string, line: m.line as number, col: (m.col as number) ?? 0 });
         break;
+      case 'select': {
+        const id = m.id as string;
+        if (id.startsWith('sym:')) this._onSelect.fire(Number(id.slice(4)));
+        else if (m.path) this._onPreview.fire({ path: m.path as string, line: (m.line as number) ?? 0, col: 0 });
+        break;
+      }
+      case 'expand': {
+        // ⊕ on a node or a folder group.
+        const id = m.id as string;
+        if (id.startsWith('grp:')) {
+          if (this.expandedGroups.has(id)) this.expandedGroups.delete(id);
+          else this.expandedGroups.add(id);
+        } else if (id.startsWith('sym:')) {
+          const sid = Number(id.slice(4));
+          const dir = m.direction as 'callees' | 'callers';
+          if (this.expanded.get(sid) === dir) this.expanded.delete(sid);
+          else this.expanded.set(sid, dir);
+        }
+        this.refresh();
+        break;
+      }
       case 'recenter': {
         const id = m.id as string;
-        if (id.startsWith('sym:')) this.center = { type: 'symbol', id: Number(id.slice(4)) };
-        else if (id.startsWith('file:')) this.center = { type: 'file', id: Number(id.slice(5)) };
-        else break;
-        this.refresh();
+        if (id.startsWith('sym:')) this.setCenter({ type: 'symbol', id: Number(id.slice(4)) });
+        else if (id.startsWith('file:')) this.setCenter({ type: 'file', id: Number(id.slice(5)) });
         break;
       }
       case 'options': {
         const next = { ...this.opts, ...(m.options as Partial<Options>) };
         const switchedFamily = isIncludeMode(next.mode) !== isIncludeMode(this.opts.mode);
-        this.opts = next;
         const switchedClass = isClassMode(next.mode) !== isClassMode(this.opts.mode);
+        this.opts = next;
         if (switchedFamily || switchedClass) {
-          // Move the center to the matching entity of the active editor.
           const editor = vscode.window.activeTextEditor;
           if (isIncludeMode(next.mode) && editor) this.showIncludesFor(editor.document);
           else if (editor) this.showSymbolAtCursor(editor, true);
@@ -98,7 +129,6 @@ export class RelationViewProvider implements vscode.WebviewViewProvider {
     this.lastWord = word;
     let syms = this.store.findDefinitions(word);
     if (!syms.length) {
-      // Fall back to the function enclosing the cursor.
       const enclosing = this.store.enclosingFunction(fsPathOf(editor.document.uri), editor.selection.active.line);
       if (enclosing) syms = [enclosing];
     }
@@ -125,7 +155,12 @@ export class RelationViewProvider implements vscode.WebviewViewProvider {
   }
 
   private setCenter(c: Center): void {
+    const same = this.center && this.center.type === c.type && this.center.id === c.id;
     this.center = c;
+    if (!same) {
+      this.expanded.clear();
+      this.expandedGroups.clear();
+    }
     this.post({ type: 'options', ...this.opts });
     this.refresh();
   }
@@ -140,6 +175,7 @@ export class RelationViewProvider implements vscode.WebviewViewProvider {
     const max = config().maxGraphNodes;
     let graph: GraphData | undefined;
     let title = '';
+    const roots = vscode.workspace.workspaceFolders?.map((f) => fsPathOf(f.uri)) ?? [];
     if (this.center.type === 'symbol') {
       const s = this.store.getSymbol(this.center.id);
       if (!s) return;
@@ -148,7 +184,12 @@ export class RelationViewProvider implements vscode.WebviewViewProvider {
         graph = buildClassGraph(this.store, s, mode, this.opts.depth, max);
       } else {
         const mode: CallMode = isIncludeMode(this.opts.mode) ? 'both' : (this.opts.mode as CallMode);
-        graph = buildCallGraph(this.store, s, mode, this.opts.depth, max);
+        const relRoot = roots.find((r) => s.path.toLowerCase().startsWith(r.toLowerCase() + '/')) ?? roots[0];
+        graph = buildCallGraph(this.store, s, mode, this.opts.depth, max, {
+          expanded: this.expanded,
+          expandedGroups: this.expandedGroups,
+          relRoot,
+        });
       }
       title = `${s.qualname}  ·  ${relPath(s.path)}:${s.line + 1}`;
     } else {
@@ -158,54 +199,14 @@ export class RelationViewProvider implements vscode.WebviewViewProvider {
       graph = buildIncludeGraph(this.store, f, mode, this.opts.depth, max);
       title = relPath(f.path);
     }
+    for (const n of graph.nodes) if (n.file) (n as { fileLabel?: string }).fileLabel = relPath(n.file);
     this.post({ type: 'graph', graph, title, family: this.center.type });
   }
 
   private html(webview: vscode.Webview): string {
-    const n = nonce();
     const script = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'relation.js'));
-    return `<!DOCTYPE html><html><head><meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' ${webview.cspSource}; script-src 'nonce-${n}' ${webview.cspSource};">
-<style>
-  html, body { height: 100%; margin: 0; overflow: hidden; font-family: var(--vscode-font-family); font-size: var(--vscode-font-size); color: var(--vscode-foreground); }
-  #bar { display: flex; gap: 8px; align-items: center; padding: 3px 8px; border-bottom: 1px solid var(--vscode-panel-border, rgba(128,128,128,.3)); white-space: nowrap; }
-  #bar select, #bar button { background: var(--vscode-dropdown-background); color: var(--vscode-dropdown-foreground); border: 1px solid var(--vscode-dropdown-border, transparent); padding: 1px 4px; font-size: 11px; }
-  #bar button { cursor: pointer; }
-  #bar label { display: flex; align-items: center; gap: 3px; font-size: 11px; opacity: .9; }
-  #title { overflow: hidden; text-overflow: ellipsis; opacity: .85; font-size: 11px; margin-left: auto; }
-  .hint { font-size: 10px; opacity: .55; white-space: nowrap; }
-  #cy { position: absolute; top: 28px; bottom: 0; left: 0; right: 0; }
-  #empty { position: absolute; top: 40%; width: 100%; text-align: center; opacity: .6; }
-  #note { position: absolute; right: 8px; bottom: 6px; font-size: 10px; opacity: .6; }
-</style></head><body>
-<div id="bar">
-  <select id="mode">
-    <optgroup label="${t('modeSymbol')}">
-      <option value="callees">${t('calls')}</option>
-      <option value="callers">${t('callers')}</option>
-      <option value="both">${t('both')}</option>
-    </optgroup>
-    <optgroup label="${t('modeClass')}">
-      <option value="bases">${t('bases')}</option>
-      <option value="derived">${t('derived')}</option>
-      <option value="classBoth">${t('both')}</option>
-    </optgroup>
-    <optgroup label="${t('modeFile')}">
-      <option value="includes">${t('includes')}</option>
-      <option value="includedBy">${t('includedBy')}</option>
-      <option value="includesBoth">${t('both')}</option>
-    </optgroup>
-  </select>
-  <label>${t('depth')} <select id="depth"><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
-  <label><input type="checkbox" id="follow"> ${t('followCursor')}</label>
-  <button id="fit" title="${t('fitTitle')}">${t('fit')}</button>
-  <span id="title"></span><span class="hint">${t('graphHint')}</span>
-</div>
-<div id="cy"></div>
-<div id="empty">${t('relationsEmpty')}</div>
-<div id="note"></div>
-<script nonce="${n}" src="${script}"></script>
-</body></html>`;
+    const codicons = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'codicons', 'codicon.css'));
+    return relationPageHtml(nonce(), webview.cspSource, script.toString(), codicons.toString());
   }
 }
 

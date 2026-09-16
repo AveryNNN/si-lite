@@ -53,15 +53,9 @@ export class ContextViewProvider implements vscode.WebviewViewProvider {
         this.post({ type: 'rows', key: m.key, html: rows });
         break;
       }
-      case 'target': {
-        // Jump the view to a member (or any symbol) chosen inside the panel.
-        const sym = this.store.getSymbol(m.id as number);
-        if (sym) {
-          this.lastWord = sym.name;
-          await this.render(sym.name, [sym]);
-        }
+      case 'target':
+        await this.showSymbol(m.id as number);
         break;
-      }
     }
   }
 
@@ -70,6 +64,16 @@ export class ContextViewProvider implements vscode.WebviewViewProvider {
   }
 
   private currentName?: string;
+
+  /** Show a symbol chosen elsewhere (Relations panel, member table, symbol tree). */
+  async showSymbol(id: number): Promise<void> {
+    const sym = this.store.getSymbol(id);
+    if (!sym || !this.view) return;
+    if (!this.view.visible) await vscode.commands.executeCommand('siLite.context.focus', { preserveFocus: true });
+    this.lastWord = sym.name;
+    this.renderer.origin = undefined;
+    await this.render(sym.name, [sym]);
+  }
 
   /** Show code around a location in the pane at the bottom of the view (no editor navigation). */
   async showPreview(path: string, line: number, col: number): Promise<void> {
@@ -149,6 +153,7 @@ export class ContextViewProvider implements vscode.WebviewViewProvider {
   }
 
   private html(webview: vscode.Webview): string {
-    return contextPageHtml(nonce(), webview.cspSource);
+    const codicons = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'codicons', 'codicon.css'));
+    return contextPageHtml(nonce(), webview.cspSource, codicons.toString());
   }
 }

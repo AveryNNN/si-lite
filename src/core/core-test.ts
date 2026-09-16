@@ -6,6 +6,7 @@ import { indexText } from './indexText';
 import { ParserService } from './parser';
 import { Store } from './store';
 import { Resolver } from './resolver';
+import { renderLine } from '../views/syntax';
 import { ContextRenderer } from '../views/contextRender';
 import { setLocaleResolver } from '../i18n';
 
@@ -133,6 +134,36 @@ async function main() {
   assert.deepEqual(store.functionsUsingAll(['g_counter']).map((r) => r.symbol.name).sort(), ['helper', 'main']);
   assert.equal(store.functionsUsingAll(['helper', 'nope']).length, 0);
 
+  // Call graph: ⊕ expansion beyond the depth limit, and folder grouping of large fan-in.
+  const runSym = store.findDefinitions('run').find((r) => r.kind === 'function')!;
+  const g1 = buildCallGraph(store, runSym, 'callees', 1, 100);
+  const inlineNode = g1.nodes.find((n) => n.label === 'inlineOne')!;
+  assert.deepEqual(inlineNode.expandable, ['callees'], 'leaf that calls something is expandable');
+  assert.ok(!g1.nodes.some((n) => n.label === 'util_add'), 'depth 1 stops before util_add');
+  const inlineId = Number(inlineNode.id.slice(4));
+  const g2 = buildCallGraph(store, runSym, 'callees', 1, 100, { expanded: new Map([[inlineId, 'callees']]) });
+  assert.ok(g2.nodes.some((n) => n.label === 'util_add'), 'expanded node shows its callees');
+  assert.equal(g2.nodes.find((n) => n.label === 'inlineOne')!.expandedDir, 'callees');
+  for (let i = 0; i < 8; i++) {
+    const dir = i < 5 ? 'a' : 'b';
+    await indexText(parser, store, `D:/proj/${dir}/caller${i}.c`, 'c', `void caller${i}(void) { helper(${i}); }`, 1, 10, opts);
+  }
+  const helperSym = store.findDefinitions('helper')[0];
+  const g3 = buildCallGraph(store, helperSym, 'callers', 1, 100, { groupThreshold: 4, relRoot: 'D:/proj' });
+  const groups = g3.nodes.filter((n) => n.kind === 'group').map((n) => n.label).sort();
+  assert.deepEqual(groups, ['a/ (5)', 'b/ (3)', 'src/ (2)'], 'callers folded by folder above the threshold');
+  const gidA = g3.nodes.find((n) => n.label === 'a/ (5)')!.id;
+  const g4 = buildCallGraph(store, helperSym, 'callers', 1, 100, { groupThreshold: 4, relRoot: 'D:/proj', expandedGroups: new Set([gidA]) });
+  assert.equal(g4.nodes.filter((n) => n.label.startsWith('caller')).length, 5, 'opened folder shows its members');
+  for (let i = 0; i < 8; i++) store.removeFile(`D:/proj/${i < 5 ? 'a' : 'b'}/caller${i}.c`);
+
+  // Syntax lexer used by the Context view.
+  const lx = renderLine('static int x = 10; /* start', false);
+  assert.match(lx.html, /tk-k">static</);
+  assert.match(lx.html, /tk-n">10</);
+  assert.ok(lx.inComment, 'unterminated block comment carries over');
+  assert.match(renderLine('end */ foo(1);', true).html, /tk-c">end \*\/<\/span>.*tk-f">foo</);
+
   const callers = store.callersOf('helper');
   assert.deepEqual(callers.map((c) => c.fromSymbol?.qualname).sort(), ['main', 'ns::Foo::run']);
 
@@ -158,7 +189,7 @@ async function main() {
   const renderer = new ContextRenderer(store, async (p) => sources[p]?.split('\n'), (p) => p.replace('D:/proj/', ''));
   let html = await renderer.render('point_t', store.findDefinitions('point_t'));
   assert.match(html, /class="members"/);
-  assert.match(html, /<mark>point_t<\/mark>/, 'usage row highlights the symbol');
+  assert.match(html, /<mark>(<span[^>]*>)?point_t/, 'usage row highlights the symbol');
   assert.ok(html.indexOf('class="members"') < html.indexOf('details class="file"'), 'members listed before uses');
   html = await renderer.render('helper', store.findDefinitions('helper'));
   assert.match(html, /1 calls|1 处调用/, 'per-file badge');
