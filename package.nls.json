@@ -39,7 +39,7 @@
   "config.excludePaths": "Files and folders removed from the project explicitly (absolute paths). Managed by \"SI: Remove from Project\".",
   "cmd.previewLocation": "SI: Preview Location in Context View",
   "config.keymap": "Keyboard scheme. All bindings apply only inside C/C++ editors; commands can always be rebound in Keyboard Shortcuts.",
-  "config.keymap.default": "Ctrl+Alt+S symbols, Ctrl+Alt+R relations, Ctrl+Alt+/ references, Ctrl+Alt+. references in file, Ctrl+Alt+Shift+S search project, Ctrl+Alt+H toggle highlight (no clashes with VS Code defaults)",
+  "config.keymap.default": "Ctrl+Alt+S symbols, Ctrl+Alt+R relations, Ctrl+Alt+/ references, Ctrl+Alt+. references in file, Ctrl+Alt+Shift+S search project, F8 / Ctrl+Alt+H toggle highlight (F8 replaces \"next problem\" in C/C++ files)",
   "config.keymap.sourceInsight": "Source Insight keys: Ctrl+= definition, Ctrl+/ references, F7 project symbols, F8 highlight word, Ctrl+Shift+F7 search project, Alt+, / Alt+. back / forward (overrides zoom-in, toggle-comment, next-problem in C/C++ files)",
   "config.keymap.none": "No default shortcuts; bind siLite.* commands yourself",
   "cmd.toggleHighlight": "SI: Toggle Highlight of Symbol at Cursor",

@@ -262,7 +262,7 @@
       {
         "command": "siLite.toggleHighlight",
         "key": "f8",
-        "when": "config.siLite.keymap == 'sourceInsight' && editorTextFocus && (editorLangId == c || editorLangId == cpp)"
+        "when": "config.siLite.keymap != 'none' && editorTextFocus && (editorLangId == c || editorLangId == cpp)"
       },
       {
         "command": "siLite.toggleHighlight",

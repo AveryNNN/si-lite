@@ -49,7 +49,7 @@ Parsing is done with tree-sitter (C and C++ grammars, WASM), and the symbol data
 
 工程依赖工作区之外的 SDK / HAL 头文件时，把那些目录填进 `siLite.externalPaths`，它们会一起被索引（相当于 SI 的外部库）。
 
-快捷键由 `siLite.keymap` 决定：`default` 用 Ctrl+Alt 组合（和 VS Code 默认键不冲突），`sourceInsight` 用 Source Insight 的 `Ctrl+=` 跳转定义、`Ctrl+/` 查找引用、`F7` 工程符号、`F8` 高亮单词、`Alt+,` / `Alt+.` 后退前进（会在 C/C++ 文件里覆盖 VS Code 的放大、切换注释、下一个问题），`none` 则不预设任何键。所有绑定只在 C/C++ 编辑器里生效，别的语言不受影响。
+快捷键由 `siLite.keymap` 决定：`default` 用 Ctrl+Alt 组合，外加 F8 高亮单词（在 C/C++ 文件里取代 VS Code 的"下一个问题"，可用 Ctrl+K Ctrl+S 改回），`sourceInsight` 用 Source Insight 的 `Ctrl+=` 跳转定义、`Ctrl+/` 查找引用、`F7` 工程符号、`F8` 高亮单词、`Alt+,` / `Alt+.` 后退前进（会在 C/C++ 文件里覆盖 VS Code 的放大、切换注释、下一个问题），`none` 则不预设任何键。所有绑定只在 C/C++ 编辑器里生效，别的语言不受影响。
 
 如果你的工程里有 `av_cold`、`__init` 这类夹在类型和函数名之间的修饰宏，把它们加进 `siLite.ignoreMacros`，否则这些函数会解析不出名字。
 
@@ -114,7 +114,7 @@ reference counts are still by name, as in Source Insight.
 | `siLite.semanticHighlighting` | `true` | Semantic colouring of identifiers |
 | `siLite.parallelism` | `0` | Parse threads for a full build; 0 = automatic |
 | `siLite.externalPaths` | `[]` | Extra directories outside the workspace to index (SDK / HAL headers), like Source Insight external libraries |
-| `siLite.keymap` | `default` | `default` (Ctrl+Alt combos, no clashes), `sourceInsight` (Ctrl+= definition, Ctrl+/ references, F7 symbols, F8 highlight word, Alt+, / Alt+.), or `none`. All bindings apply only inside C/C++ editors |
+| `siLite.keymap` | `default` | `default` (Ctrl+Alt combos plus F8 = highlight word), `sourceInsight` (Ctrl+= definition, Ctrl+/ references, F7 symbols, F8 highlight word, Alt+, / Alt+.), or `none`. All bindings apply only inside C/C++ editors |
 | `siLite.ignoreMacros` | FFmpeg / Linux / Win32 decorators | Attribute-like macros blanked before parsing (`av_cold`, `__init`, `WINAPI`...). Without this `static void av_cold f()` loses its name. Add your project's own |
 
 ## How it works

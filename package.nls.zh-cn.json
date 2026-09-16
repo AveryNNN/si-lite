@@ -39,7 +39,7 @@
   "config.excludePaths": "被显式移出工程的文件和目录（绝对路径），由\"SI：从工程移除\"维护。",
   "cmd.previewLocation": "SI：在上下文视图中预览位置",
   "config.keymap": "键位方案。所有绑定只在 C/C++ 编辑器里生效；命令随时可以在\"键盘快捷方式\"里改绑。",
-  "config.keymap.default": "Ctrl+Alt+S 工程符号、Ctrl+Alt+R 关系图、Ctrl+Alt+/ 查找引用、Ctrl+Alt+. 本文件引用、Ctrl+Alt+Shift+S 搜索工程、Ctrl+Alt+H 高亮（与 VS Code 默认键不冲突）",
+  "config.keymap.default": "Ctrl+Alt+S 工程符号、Ctrl+Alt+R 关系图、Ctrl+Alt+/ 查找引用、Ctrl+Alt+. 本文件引用、Ctrl+Alt+Shift+S 搜索工程、F8 / Ctrl+Alt+H 高亮（F8 在 C/C++ 文件里取代\"下一个问题\"）",
   "config.keymap.sourceInsight": "Source Insight 键位：Ctrl+= 跳转定义、Ctrl+/ 查找引用、F7 工程符号、F8 高亮单词、Ctrl+Shift+F7 搜索工程、Alt+, / Alt+. 后退前进（在 C/C++ 文件里覆盖放大、切换注释、下一个问题）",
   "config.keymap.none": "不预设快捷键，自行绑定 siLite.* 命令",
   "cmd.toggleHighlight": "SI：高亮 / 取消高亮光标处符号",
