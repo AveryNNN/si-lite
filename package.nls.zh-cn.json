@@ -33,10 +33,15 @@
   "config.semanticHighlighting": "按工程数据库里的符号种类给标识符着色（宏、全局变量、参数、成员、类型）。需要编辑器设置 editor.semanticHighlighting.enabled 打开。",
   "cmd.searchProject": "SI：搜索工程（同时用到多个符号的函数）",
   "config.parallelism": "全量构建使用的解析线程数。0 = 自动（CPU 数减 2，最多 4）。",
-  "config.sourceInsightKeys": "Source Insight 风格快捷键：Ctrl+= 跳转定义，Ctrl+/ 查找引用（在 C/C++ 里覆盖切换注释），Alt+, / Alt+. 后退 / 前进，F7 工程符号列表，F8 文件符号列表。",
   "config.externalPaths": "工作区之外也要索引的绝对目录（SDK、HAL、工具链头文件等），相当于 Source Insight 的外部库：这些符号会出现在跳转、补全和上下文视图里。",
   "cmd.addToProject": "SI：加入工程",
   "cmd.removeFromProject": "SI：从工程移除",
   "config.excludePaths": "被显式移出工程的文件和目录（绝对路径），由\"SI：从工程移除\"维护。",
-  "cmd.previewLocation": "SI：在上下文视图中预览位置"
+  "cmd.previewLocation": "SI：在上下文视图中预览位置",
+  "config.keymap": "键位方案。所有绑定只在 C/C++ 编辑器里生效；命令随时可以在\"键盘快捷方式\"里改绑。",
+  "config.keymap.default": "Ctrl+Alt+S 工程符号、Ctrl+Alt+R 关系图、Ctrl+Alt+/ 查找引用、Ctrl+Alt+. 本文件引用、Ctrl+Alt+Shift+S 搜索工程、Ctrl+Alt+H 高亮（与 VS Code 默认键不冲突）",
+  "config.keymap.sourceInsight": "Source Insight 键位：Ctrl+= 跳转定义、Ctrl+/ 查找引用、F7 工程符号、F8 高亮单词、Ctrl+Shift+F7 搜索工程、Alt+, / Alt+. 后退前进（在 C/C++ 文件里覆盖放大、切换注释、下一个问题）",
+  "config.keymap.none": "不预设快捷键，自行绑定 siLite.* 命令",
+  "cmd.toggleHighlight": "SI：高亮 / 取消高亮光标处符号",
+  "cmd.clearHighlights": "SI：清除本文件的高亮"
 }

@@ -33,10 +33,15 @@
   "config.semanticHighlighting": "Colour identifiers by what the project database says they are (macros, globals, parameters, fields, types). Needs the editor setting editor.semanticHighlighting.enabled.",
   "cmd.searchProject": "SI: Search Project (functions using all given symbols)",
   "config.parallelism": "Parse threads used by a full build. 0 = automatic (CPU count minus 2, at most 4).",
-  "config.sourceInsightKeys": "Source Insight style keys: Ctrl+= jump to definition, Ctrl+/ lookup references (replaces toggle comment in C/C++), Alt+, / Alt+. go back / forward, F7 project symbol list, F8 file symbol list.",
   "config.externalPaths": "Absolute directories outside the workspace to index as well (SDK, HAL, toolchain headers). Like Source Insight external libraries: their symbols show up in navigation, completion and the Context view.",
   "cmd.addToProject": "SI: Add to Project",
   "cmd.removeFromProject": "SI: Remove from Project",
   "config.excludePaths": "Files and folders removed from the project explicitly (absolute paths). Managed by \"SI: Remove from Project\".",
-  "cmd.previewLocation": "SI: Preview Location in Context View"
+  "cmd.previewLocation": "SI: Preview Location in Context View",
+  "config.keymap": "Keyboard scheme. All bindings apply only inside C/C++ editors; commands can always be rebound in Keyboard Shortcuts.",
+  "config.keymap.default": "Ctrl+Alt+S symbols, Ctrl+Alt+R relations, Ctrl+Alt+/ references, Ctrl+Alt+. references in file, Ctrl+Alt+Shift+S search project, Ctrl+Alt+H toggle highlight (no clashes with VS Code defaults)",
+  "config.keymap.sourceInsight": "Source Insight keys: Ctrl+= definition, Ctrl+/ references, F7 project symbols, F8 highlight word, Ctrl+Shift+F7 search project, Alt+, / Alt+. back / forward (overrides zoom-in, toggle-comment, next-problem in C/C++ files)",
+  "config.keymap.none": "No default shortcuts; bind siLite.* commands yourself",
+  "cmd.toggleHighlight": "SI: Toggle Highlight of Symbol at Cursor",
+  "cmd.clearHighlights": "SI: Clear Highlights in This File"
 }

@@ -24,7 +24,7 @@ Parsing is done with tree-sitter (C and C++ grammars, WASM), and the symbol data
 | Relation Window | "关系图"面板：调用 / 被调用 / 双向、基类 / 派生类、包含 / 被包含，深度 1-4，跟随光标 |
 | Lookup References | `Ctrl+Alt+/` 全工程引用、`Ctrl+Alt+.` 仅本文件，用 VS Code 原生引用面板展示；也可直接 `Shift+F12` |
 | 调用树 / 类继承树（大纲形式） | VS Code 自带的 Call Hierarchy 和 Type Hierarchy 视图 |
-| 自动引用高亮（区分作用域） | 光标处标识符的高亮按作用域区分：局部变量只高亮本函数内 |
+| 自动引用高亮（区分作用域） | 光标处标识符的高亮按作用域区分：局部变量只高亮本函数内；另有 Source Insight 式的 F8 持久高亮（`SI：高亮 / 取消高亮光标处符号`），不随光标移动消失，可叠加多个颜色 |
 | 符号自动补全（`p->` 列出成员） | 补全会推断 `p`、`a->b`、`(T*)x`、`f()` 的类型后列出成员；普通标识符按前缀补全 |
 | Smart Rename | `F2` 重命名：局部变量只改本作用域，全局按名字改全工程 |
 | 上下文语法着色 | 语义着色：宏、全局变量、参数、局部变量、成员、类型、枚举值各有颜色（需开启 `editor.semanticHighlighting.enabled`） |
@@ -49,7 +49,7 @@ Parsing is done with tree-sitter (C and C++ grammars, WASM), and the symbol data
 
 工程依赖工作区之外的 SDK / HAL 头文件时，把那些目录填进 `siLite.externalPaths`，它们会一起被索引（相当于 SI 的外部库）。
 
-习惯 Source Insight 快捷键的话，打开 `siLite.sourceInsightKeys`：`Ctrl+=` 跳转定义、`Ctrl+/` 查找引用、`Alt+,` / `Alt+.` 后退前进、`F7` 工程符号、`F8` 文件符号。
+快捷键由 `siLite.keymap` 决定：`default` 用 Ctrl+Alt 组合（和 VS Code 默认键不冲突），`sourceInsight` 用 Source Insight 的 `Ctrl+=` 跳转定义、`Ctrl+/` 查找引用、`F7` 工程符号、`F8` 高亮单词、`Alt+,` / `Alt+.` 后退前进（会在 C/C++ 文件里覆盖 VS Code 的放大、切换注释、下一个问题），`none` 则不预设任何键。所有绑定只在 C/C++ 编辑器里生效，别的语言不受影响。
 
 如果你的工程里有 `av_cold`、`__init` 这类夹在类型和函数名之间的修饰宏，把它们加进 `siLite.ignoreMacros`，否则这些函数会解析不出名字。
 
@@ -65,7 +65,7 @@ Parsing is done with tree-sitter (C and C++ grammars, WASM), and the symbol data
 | Relation Window | **Relations** panel: calls / called by / both, base / derived classes, include graph, depth 1-4, follows the cursor |
 | Lookup References | `Ctrl+Alt+/` project wide, `Ctrl+Alt+.` this file, shown in VS Code's own references peek; `Shift+F12` works too |
 | Call / class trees in outline form | VS Code's Call Hierarchy and Type Hierarchy views |
-| Automatic reference highlighting | Scope-aware DocumentHighlightProvider |
+| Automatic reference highlighting | Scope-aware DocumentHighlightProvider; F8-style sticky highlight (`SI: Toggle Highlight`) that survives cursor moves |
 | Symbolic auto-completion | `p->` lists the members of `p`'s type (locals, globals, member chains, casts, call results); identifiers complete by prefix |
 | Smart Rename | `F2`: locals rename within their scope, globals project wide by name |
 | Contextual syntax formatting | Semantic tokens for macros, globals, parameters, locals, fields, types, enumerators |
@@ -114,7 +114,7 @@ reference counts are still by name, as in Source Insight.
 | `siLite.semanticHighlighting` | `true` | Semantic colouring of identifiers |
 | `siLite.parallelism` | `0` | Parse threads for a full build; 0 = automatic |
 | `siLite.externalPaths` | `[]` | Extra directories outside the workspace to index (SDK / HAL headers), like Source Insight external libraries |
-| `siLite.sourceInsightKeys` | `false` | Source Insight keys: `Ctrl+=` definition, `Ctrl+/` references, `Alt+,`/`Alt+.` back/forward, `F7`/`F8` symbol lists |
+| `siLite.keymap` | `default` | `default` (Ctrl+Alt combos, no clashes), `sourceInsight` (Ctrl+= definition, Ctrl+/ references, F7 symbols, F8 highlight word, Alt+, / Alt+.), or `none`. All bindings apply only inside C/C++ editors |
 | `siLite.ignoreMacros` | FFmpeg / Linux / Win32 decorators | Attribute-like macros blanked before parsing (`av_cold`, `__init`, `WINAPI`...). Without this `static void av_cold f()` loses its name. Add your project's own |
 
 ## How it works

@@ -6,6 +6,7 @@ import { Resolver } from './core/resolver';
 import { DocTrees } from './docTree';
 import { Indexer } from './indexer';
 import { registerEditorFeatures } from './editorFeatures';
+import { StickyHighlight } from './highlight';
 import { SEMANTIC_LEGEND, SemanticProvider } from './semanticTokens';
 import { SymbolService, registerProviders, showReferences } from './providers';
 import { kindWord, setLocaleResolver, t } from './i18n';
@@ -52,6 +53,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }),
     ...registerProviders(store, service),
     ...registerEditorFeatures(store, service, resolver, trees),
+  );
+  const sticky = new StickyHighlight(service, trees);
+  context.subscriptions.push(
+    sticky,
+    vscode.commands.registerCommand('siLite.toggleHighlight', () => {
+      const ed = vscode.window.activeTextEditor;
+      if (ed && isCFamily(ed.document)) return sticky.toggle(ed);
+    }),
+    vscode.commands.registerCommand('siLite.clearHighlights', () => {
+      const ed = vscode.window.activeTextEditor;
+      if (ed) sticky.clear(ed.document);
+    }),
   );
   const semantic = new SemanticProvider(store, trees);
   if (config().semanticHighlighting) {

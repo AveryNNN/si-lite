@@ -18,7 +18,7 @@ function posOf(doc: vscode.TextDocument, needle: string): vscode.Position {
 }
 
 export async function run(): Promise<void> {
-  const ext = vscode.extensions.getExtension('local.si-lite')!;
+  const ext = vscode.extensions.getExtension('AveryNNN.si-lite')!;
   await ext.activate();
   console.log(`activated ${mem()}`);
 

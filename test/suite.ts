@@ -29,7 +29,7 @@ function posOf(doc: vscode.TextDocument, needle: string, occurrence = 0): vscode
 }
 
 test('extension activates', async () => {
-  const ext = vscode.extensions.getExtension('local.si-lite');
+  const ext = vscode.extensions.getExtension('AveryNNN.si-lite');
   assert.ok(ext, 'extension present');
   await ext.activate();
   assert.ok(ext.isActive);
@@ -319,6 +319,17 @@ test('preview in the Context view does not move the editor', async () => {
   assert.ok(vscode.window.activeTextEditor!.selection.active.isEqual(before), 'cursor unchanged');
 });
 
+test('sticky highlight toggles on and off', async () => {
+  const main = await open(file('src', 'main.c'));
+  const editor = vscode.window.activeTextEditor!;
+  const p = posOf(main, 'g_counter++');
+  editor.selection = new vscode.Selection(p, p);
+  await vscode.commands.executeCommand('siLite.toggleHighlight');
+  await vscode.commands.executeCommand('siLite.toggleHighlight');
+  await vscode.commands.executeCommand('siLite.toggleHighlight');
+  await vscode.commands.executeCommand('siLite.clearHighlights');
+});
+
 test('call hierarchy incoming and outgoing', async () => {
   const doc = await open(file('src', 'util.c'));
   const items = (await vscode.commands.executeCommand('vscode.prepareCallHierarchy', doc.uri, posOf(doc, 'int util_add').translate(0, 4))) as vscode.CallHierarchyItem[];
@@ -374,7 +385,7 @@ test('relation and include commands run against the webviews', async () => {
 });
 
 test('database is persisted to workspace storage', async () => {
-  const ext = vscode.extensions.getExtension('local.si-lite')!;
+  const ext = vscode.extensions.getExtension('AveryNNN.si-lite')!;
   const storage = (ext.exports as undefined) ?? undefined;
   void storage;
   // The store saves after a build; look for the sqlite under the user-data-dir workspaceStorage.

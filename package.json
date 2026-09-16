@@ -81,6 +81,14 @@
       {
         "command": "siLite.previewLocation",
         "title": "%cmd.previewLocation%"
+      },
+      {
+        "command": "siLite.toggleHighlight",
+        "title": "%cmd.toggleHighlight%"
+      },
+      {
+        "command": "siLite.clearHighlights",
+        "title": "%cmd.clearHighlights%"
       }
     ],
     "viewsContainers": {
@@ -160,6 +168,11 @@
           "command": "siLite.findReferencesInFile",
           "when": "editorLangId == c || editorLangId == cpp",
           "group": "navigation@11"
+        },
+        {
+          "command": "siLite.toggleHighlight",
+          "when": "editorLangId == c || editorLangId == cpp",
+          "group": "navigation@12"
         }
       ],
       "explorer/context": [
@@ -183,60 +196,79 @@
       {
         "command": "siLite.searchSymbol",
         "key": "ctrl+alt+s",
-        "mac": "cmd+alt+s"
+        "mac": "cmd+alt+s",
+        "when": "config.siLite.keymap == 'default' && (editorTextFocus && (editorLangId == c || editorLangId == cpp) || focusedView == siLite.symbols)"
       },
       {
         "command": "siLite.showRelations",
         "key": "ctrl+alt+r",
         "mac": "cmd+alt+r",
-        "when": "editorTextFocus"
+        "when": "config.siLite.keymap == 'default' && editorTextFocus && (editorLangId == c || editorLangId == cpp)"
       },
       {
         "command": "siLite.findReferences",
         "key": "ctrl+alt+/",
         "mac": "cmd+alt+/",
-        "when": "editorTextFocus"
+        "when": "config.siLite.keymap == 'default' && editorTextFocus && (editorLangId == c || editorLangId == cpp)"
       },
       {
         "command": "siLite.findReferencesInFile",
         "key": "ctrl+alt+.",
         "mac": "cmd+alt+.",
-        "when": "editorTextFocus"
+        "when": "config.siLite.keymap == 'default' && editorTextFocus && (editorLangId == c || editorLangId == cpp)"
       },
       {
         "command": "siLite.searchProject",
         "key": "ctrl+alt+shift+s",
-        "mac": "cmd+alt+shift+s"
+        "mac": "cmd+alt+shift+s",
+        "when": "config.siLite.keymap == 'default' && editorTextFocus && (editorLangId == c || editorLangId == cpp)"
       },
       {
         "command": "editor.action.revealDefinition",
         "key": "ctrl+=",
-        "when": "config.siLite.sourceInsightKeys && editorTextFocus && (editorLangId == c || editorLangId == cpp)"
+        "when": "config.siLite.keymap == 'sourceInsight' && editorTextFocus && (editorLangId == c || editorLangId == cpp)"
       },
       {
         "command": "siLite.findReferences",
         "key": "ctrl+/",
-        "when": "config.siLite.sourceInsightKeys && editorTextFocus && (editorLangId == c || editorLangId == cpp)"
+        "when": "config.siLite.keymap == 'sourceInsight' && editorTextFocus && (editorLangId == c || editorLangId == cpp)"
       },
       {
-        "command": "workbench.action.navigateBack",
-        "key": "alt+,",
-        "when": "config.siLite.sourceInsightKeys"
-      },
-      {
-        "command": "workbench.action.navigateForward",
-        "key": "alt+.",
-        "when": "config.siLite.sourceInsightKeys"
+        "command": "siLite.showRelations",
+        "key": "ctrl+alt+r",
+        "mac": "cmd+alt+r",
+        "when": "config.siLite.keymap == 'sourceInsight' && editorTextFocus && (editorLangId == c || editorLangId == cpp)"
       },
       {
         "command": "siLite.searchSymbol",
         "key": "f7",
-        "when": "config.siLite.sourceInsightKeys"
+        "when": "config.siLite.keymap == 'sourceInsight' && editorTextFocus && (editorLangId == c || editorLangId == cpp)"
       },
       {
-        "command": "workbench.action.gotoSymbol",
+        "command": "siLite.searchProject",
+        "key": "ctrl+shift+f7",
+        "when": "config.siLite.keymap == 'sourceInsight' && editorTextFocus && (editorLangId == c || editorLangId == cpp)"
+      },
+      {
+        "command": "workbench.action.navigateBack",
+        "key": "alt+,",
+        "when": "config.siLite.keymap == 'sourceInsight' && editorTextFocus && (editorLangId == c || editorLangId == cpp)"
+      },
+      {
+        "command": "workbench.action.navigateForward",
+        "key": "alt+.",
+        "when": "config.siLite.keymap == 'sourceInsight' && editorTextFocus && (editorLangId == c || editorLangId == cpp)"
+      },
+      {
+        "command": "siLite.toggleHighlight",
         "key": "f8",
-        "when": "config.siLite.sourceInsightKeys"
+        "when": "config.siLite.keymap == 'sourceInsight' && editorTextFocus && (editorLangId == c || editorLangId == cpp)"
+      },
+      {
+        "command": "siLite.toggleHighlight",
+        "key": "ctrl+alt+h",
+        "mac": "cmd+alt+h",
+        "when": "config.siLite.keymap == 'default' && editorTextFocus && (editorLangId == c || editorLangId == cpp)"
       }
     ],
     "configuration": {
@@ -364,11 +396,6 @@
           "maximum": 8,
           "description": "%config.parallelism%"
         },
-        "siLite.sourceInsightKeys": {
-          "type": "boolean",
-          "default": false,
-          "description": "%config.sourceInsightKeys%"
-        },
         "siLite.externalPaths": {
           "type": "array",
           "items": {
@@ -384,6 +411,21 @@
           },
           "default": [],
           "description": "%config.excludePaths%"
+        },
+        "siLite.keymap": {
+          "type": "string",
+          "enum": [
+            "default",
+            "sourceInsight",
+            "none"
+          ],
+          "enumDescriptions": [
+            "%config.keymap.default%",
+            "%config.keymap.sourceInsight%",
+            "%config.keymap.none%"
+          ],
+          "default": "default",
+          "description": "%config.keymap%"
         }
       }
     },
