@@ -51,6 +51,8 @@ Parsing is done with tree-sitter (C and C++ grammars, WASM), and the symbol data
 
 快捷键由 `siLite.keymap` 决定：`default` 用 Ctrl+Alt 组合，外加 F8 高亮单词（在 C/C++ 文件里取代 VS Code 的"下一个问题"，可用 Ctrl+K Ctrl+S 改回），`sourceInsight` 用 Source Insight 的 `Ctrl+=` 跳转定义、`Ctrl+/` 查找引用、`F7` 工程符号、`F8` 高亮单词、`Alt+,` / `Alt+.` 后退前进（会在 C/C++ 文件里覆盖 VS Code 的放大、切换注释、下一个问题），`none` 则不预设任何键。所有绑定只在 C/C++ 编辑器里生效，别的语言不受影响。
 
+开发时想改完立刻在别的窗口看到效果：`npm run link-dev` 把已安装的插件目录换成指向源码的目录连接，再开着 `npm run watch`，并打开设置 `siLite.devAutoReload`，之后每次保存源码，用着这个插件的窗口会在一两秒内自动重载。`npm run unlink-dev` 恢复成正常安装。
+
 如果你的工程里有 `av_cold`、`__init` 这类夹在类型和函数名之间的修饰宏，把它们加进 `siLite.ignoreMacros`，否则这些函数会解析不出名字。
 
 ## Features
@@ -166,6 +168,17 @@ npm run package        # produce .vsix
 ```
 
 Press F5 in VS Code to launch the Extension Development Host.
+
+**Live development in your normal windows** (instead of the Development Host):
+
+```
+npm run link-dev       # replace the installed extension folder with a junction to this repo
+npm run watch          # rebuild dist/ on every save
+```
+
+Then enable `siLite.devAutoReload`: each window running the extension reloads itself a moment
+after the bundle changes, so edits show up without packaging or reinstalling. `npm run unlink-dev`
+restores the packaged install.
 
 ## Credits
 

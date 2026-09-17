@@ -42,5 +42,6 @@
   "config.keymap.sourceInsight": "Source Insight keys: Ctrl+= definition, Ctrl+/ references, F7 project symbols, F8 highlight word, Ctrl+Shift+F7 search project, Alt+, / Alt+. back / forward (overrides zoom-in, toggle-comment, next-problem in C/C++ files)",
   "config.keymap.none": "No default shortcuts; bind siLite.* commands yourself",
   "cmd.toggleHighlight": "SI: Toggle Highlight of Symbol at Cursor",
-  "cmd.clearHighlights": "SI: Clear Highlights in This File"
+  "cmd.clearHighlights": "SI: Clear Highlights in This File",
+  "config.devAutoReload": "Development: reload this window automatically when the extension bundle (dist/extension.js) changes on disk. Use with npm run link-dev + npm run watch."
 }

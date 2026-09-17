@@ -42,5 +42,6 @@
   "config.keymap.sourceInsight": "Source Insight 键位：Ctrl+= 跳转定义、Ctrl+/ 查找引用、F7 工程符号、F8 高亮单词、Ctrl+Shift+F7 搜索工程、Alt+, / Alt+. 后退前进（在 C/C++ 文件里覆盖放大、切换注释、下一个问题）",
   "config.keymap.none": "不预设快捷键，自行绑定 siLite.* 命令",
   "cmd.toggleHighlight": "SI：高亮 / 取消高亮光标处符号",
-  "cmd.clearHighlights": "SI：清除本文件的高亮"
+  "cmd.clearHighlights": "SI：清除本文件的高亮",
+  "config.devAutoReload": "开发用：插件打包产物（dist/extension.js）在磁盘上变化时自动重载本窗口。配合 npm run link-dev 和 npm run watch 使用。"
 }

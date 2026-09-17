@@ -418,6 +418,11 @@
           ],
           "default": "default",
           "description": "%config.keymap%"
+        },
+        "siLite.devAutoReload": {
+          "type": "boolean",
+          "default": false,
+          "description": "%config.devAutoReload%"
         }
       }
     },
@@ -454,7 +459,9 @@
     "bench": "esbuild src/core/bench.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/bench.js --log-level=error && node --max-old-space-size=4096 dist/bench.js",
     "test:vscode": "npm run build && node esbuild.mjs --test && node test/runTest.mjs",
     "test": "npm run test:core && npm run test:vscode",
-    "package": "npm run build && vsce package --no-dependencies --allow-missing-repository"
+    "package": "npm run build && vsce package --no-dependencies --allow-missing-repository",
+    "link-dev": "node scripts/link-dev.mjs",
+    "unlink-dev": "node scripts/link-dev.mjs --undo"
   },
   "dependencies": {
     "@vscode/codicons": "^0.0.46-24",

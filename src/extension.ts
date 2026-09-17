@@ -1,3 +1,4 @@
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { ParserService } from './core/parser';
@@ -160,6 +161,26 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand('siLite.findReferences', () => showReferences(service, false)),
     vscode.commands.registerCommand('siLite.findReferencesInFile', () => showReferences(service, true)),
   );
+
+  // Development loop: with the install folder linked to the working copy (npm run link-dev) and
+  // `npm run watch` running, a rebuilt bundle reloads this window so the change shows up at once.
+  if (vscode.workspace.getConfiguration('siLite').get<boolean>('devAutoReload', false)) {
+    const bundle = path.join(context.extensionPath, 'dist', 'extension.js');
+    const startedAt = fs.statSync(bundle).mtimeMs;
+    const check = () => {
+      try {
+        if (fs.statSync(bundle).mtimeMs > startedAt + 500) {
+          clearInterval(timer);
+          void vscode.commands.executeCommand('workbench.action.reloadWindow');
+        }
+      } catch {
+        /* bundle being rewritten */
+      }
+    };
+    const timer = setInterval(check, 1500);
+    context.subscriptions.push({ dispose: () => clearInterval(timer) });
+    output.appendLine('devAutoReload: watching ' + bundle);
+  }
 
   const st = store.stats();
   if (st.files === 0 && vscode.workspace.workspaceFolders?.length) {
