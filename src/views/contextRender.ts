@@ -5,7 +5,8 @@ import { kindWord, t } from '../i18n';
 import { escapeHtml } from '../util-core';
 import { SYNTAX_CSS, commentStateAt, renderLine } from './syntax';
 
-const MAX_BODY_LINES = 12;
+/** Whole definitions are shown in a scrollable box; only absurdly long ones are cut. */
+const MAX_BODY_LINES = 400;
 const MAX_COMMENT_LINES = 6;
 const FILES_EXPANDED = 3; // file groups pre-filled with rows
 const FILES_LISTED = 60; // file groups shown; the rest is summarised
@@ -132,7 +133,7 @@ export class ContextRenderer {
         return `<tr${cls} data-line="${n}"><td class="ln">${n + 1}</td><td class="src">${r.html}</td></tr>`;
       });
       const moreRow = snip.truncated ? `<tr class="dim" data-line="${snip.startLine + snip.lines.length}"><td class="ln">…</td><td class="src">${t('moreLines', s.endLine - snip.startLine - snip.lines.length + 1)}</td></tr>` : '';
-      code = `<table class="code" data-path="${escapeHtml(s.path)}">${rows.join('')}${moreRow}</table>`;
+      code = `<div class="codebox"><table class="code" data-path="${escapeHtml(s.path)}">${rows.join('')}${moreRow}</table></div>`;
     }
     let alt = '';
     if (others.length) {
@@ -399,6 +400,9 @@ details.alt[open] > summary::before { content: '\\eab4'; }
 .name { font-weight: 600; }
 .loc { opacity: .7; font-size: 11px; margin-left: auto; }
 table.code { border-collapse: collapse; width: 100%; font-family: var(--vscode-editor-font-family); font-size: var(--vscode-editor-font-size); margin-top: 2px; }
+.codebox { max-height: 40vh; min-height: 3em; overflow: auto; resize: vertical; border: 1px solid var(--vscode-panel-border, rgba(128,128,128,.25)); border-radius: 3px; margin-top: 3px; background: var(--vscode-editor-background); }
+.codebox table.code { margin-top: 0; }
+.codebox td.src { white-space: pre; }
 table.code tr { cursor: pointer; }
 table.code tr.def { background: var(--vscode-editor-findMatchHighlightBackground, rgba(255,200,0,.25)); }
 td.ln, .row .ln { text-align: right; padding: 0 8px 0 2px; opacity: .5; user-select: none; white-space: nowrap; }
