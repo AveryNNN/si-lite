@@ -14,6 +14,14 @@ export class ContextViewProvider implements vscode.WebviewViewProvider {
   static readonly viewType = 'siLite.context';
   private view?: vscode.WebviewView;
   private lastWord?: string;
+  /** Monotonic render id: a slow render (many files to analyse) must not overwrite a newer one. */
+  private renderSeq = 0;
+
+  private beginRender(): number {
+    const seq = ++this.renderSeq;
+    this.renderer.shouldAbort = () => seq !== this.renderSeq;
+    return seq;
+  }
   private locked = false;
   private fileCache = new Map<string, { mtime: number; lines: string[] }>();
   private readonly renderer: ContextRenderer;
@@ -110,25 +118,30 @@ export class ContextViewProvider implements vscode.WebviewViewProvider {
 
   private async renderAt(doc: vscode.TextDocument, pos: vscode.Position, word: string, key: string): Promise<void> {
     if (!this.view) return;
+    const seq = this.beginRender();
     const res = await this.service.resolveAt(doc, pos);
+    if (seq !== this.renderSeq) return;
     this.currentName = word;
     const here = fsPathOf(doc.uri);
     this.renderer.origin = { path: here, fnName: this.store.enclosingFunction(here, pos.line)?.qualname };
     this.renderer.filter = res && res.kind !== 'local' ? (p, refs) => this.service.filterOccurrences(p, res, refs) : undefined;
     if (res && res.kind !== 'local' && this.store.referenceFiles(word).length > 20) this.post({ type: 'busy', html: t('analysing', word) });
     const html = await this.renderer.renderResolution(res, word, fsPathOf(doc.uri));
+    if (seq !== this.renderSeq) return; // superseded while analysing
     const foldKey = res?.kind === 'local' ? key : word;
     this.post({ type: 'set', html, key: foldKey });
   }
 
   private async render(word: string, syms: SymbolRow[]): Promise<void> {
     if (!this.view) return;
+    const seq = this.beginRender();
     const target = syms[0];
     this.currentName = word;
     this.renderer.filter = target
       ? (p, refs) => this.service.filterOccurrences(p, target.kind === 'field' || target.kind === 'method' ? { kind: 'member', name: word, symbol: target, ownerType: target.qualname.split('::').slice(0, -1).join('::') } : { kind: 'symbols', name: word, symbols: syms, isCall: false }, refs)
       : undefined;
     const html = await this.renderer.render(word, syms);
+    if (seq !== this.renderSeq) return;
     this.post({ type: 'set', html, key: word });
   }
 

@@ -38,6 +38,8 @@ export function kindIcon(kind: string): string {
 export class ContextRenderer {
   /** Set by the host for the symbol currently shown; used when file groups are expanded lazily. */
   filter?: OccurrenceFilter;
+  /** Set by the host; when it returns true the current render is obsolete and stops early. */
+  shouldAbort?: () => boolean;
 
   constructor(
     private readonly store: Store,
@@ -185,6 +187,7 @@ export class ContextRenderer {
       unfiltered = ordered.slice(FILTER_MAX_FILES);
       const kept: typeof files = [];
       for (const f of head) {
+        if (this.shouldAbort?.()) return '';
         const refs = this.store.referencesInFile(name, f.fileId, ROWS_PER_FILE + 1);
         const ok = await this.filter(f.path, refs);
         const okSet = new Set(ok.map((r) => `${r.line}:${r.col}`));

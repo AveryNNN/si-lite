@@ -209,6 +209,15 @@ async function main() {
   renderer.filter = undefined;
   renderer.origin = undefined;
 
+  let filterCalls = 0;
+  renderer.filter = async (_p, refs) => (filterCalls++, refs);
+  renderer.shouldAbort = () => filterCalls >= 1; // obsolete after the first file
+  html = await renderer.render('helper', store.findDefinitions('helper'));
+  assert.ok(filterCalls <= 1, 'aborted render stops analysing files');
+  assert.ok(!html.includes('data-block="uses"') || html.length < 400, 'aborted render yields no uses section');
+  renderer.shouldAbort = undefined;
+  renderer.filter = undefined;
+
   setLocaleResolver(() => 'zh-cn');
   html = await renderer.render('helper', store.findDefinitions('helper'));
   assert.match(html, /全工程引用/);
