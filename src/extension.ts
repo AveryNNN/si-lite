@@ -82,10 +82,23 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 50);
   status.command = 'siLite.searchSymbol';
+  let built = '';
+  try {
+    built = new Date(fs.statSync(path.join(context.extensionPath, 'dist', 'extension.js')).mtimeMs).toLocaleTimeString();
+  } catch {
+    /* not critical */
+  }
+  output.appendLine(`extension path: ${context.extensionPath}  bundle built: ${built}`);
   const updateStatus = () => {
     const s = store.stats();
-    status.text = `$(database) SI ${s.symbols}`;
-    status.tooltip = t('statusTooltip', s.files, s.symbols, s.refs);
+    const dev = vscode.workspace.getConfiguration('siLite').get<boolean>('devAutoReload', false);
+    status.text = `$(database) SI ${s.symbols}${dev && built ? ` · ${built}` : ''}`;
+    const md = new vscode.MarkdownString(t('statusTooltip', s.files, s.symbols, s.refs));
+    if (built) md.appendMarkdown(`
+
+${t('builtAt', built)}  
+${context.extensionPath}`);
+    status.tooltip = md;
     status.show();
   };
   updateStatus();
